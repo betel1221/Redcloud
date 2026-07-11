@@ -28,7 +28,6 @@ const navItems = [
   { name: 'Reports', path: '/dashboard/reports', icon: FileText },
   { name: 'Logs', path: '/dashboard/logs', icon: MessageSquare },
   { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: BookOpen },
-  { name: 'Notifications', path: '/dashboard/notifications', icon: Bell },
 ];
 
 const bottomItems = [
@@ -36,27 +35,36 @@ const bottomItems = [
   { name: 'Profile', path: '/dashboard/profile', icon: User },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isCollapsed: boolean;
+}
+
+export default function Sidebar({ isCollapsed }: SidebarProps) {
   return (
-    <div className="w-64 bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-20">
-      <div className="h-16 flex items-center px-6 border-b border-border">
-        <Activity className="w-6 h-6 text-primary mr-2" />
-        <span className="text-lg font-bold text-textPrimary tracking-wider">ERAOP</span>
+    <div className={cn(
+      "bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-20 transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className="h-16 flex items-center justify-center px-4 border-b border-border">
+        <Activity className="w-6 h-6 text-primary flex-shrink-0" />
+        {!isCollapsed && <span className="text-lg font-bold text-textPrimary tracking-wider ml-2">ERAOP</span>}
       </div>
       
       <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
         <nav className="space-y-1 px-3">
-          <div className="text-xs font-semibold text-textSecondary uppercase tracking-wider mb-2 px-3">
-            Overview
+          <div className="text-xs font-semibold text-textSecondary uppercase tracking-wider mb-2 px-3 text-center">
+            {!isCollapsed && "Overview"}
           </div>
           {navItems.map((item) => (
             <NavLink
               key={item.name}
               to={item.path}
               end={item.path === '/dashboard'}
+              title={isCollapsed ? item.name : undefined}
               className={({ isActive }) =>
                 cn(
-                  "group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                  "group flex items-center py-2 text-sm font-medium rounded-lg transition-colors",
+                  isCollapsed ? "justify-center px-0" : "px-3",
                   isActive 
                     ? "bg-primary/10 text-primary" 
                     : "text-textSecondary hover:bg-surfaceHover hover:text-textPrimary"
@@ -64,11 +72,10 @@ export default function Sidebar() {
               }
             >
               <item.icon className={cn(
-                "mr-3 flex-shrink-0 h-5 w-5 transition-colors",
-                // Active state handled by parent class in NavLink via custom cn logic if needed,
-                // but tailwind group-hover works well here.
+                "flex-shrink-0 h-5 w-5 transition-colors",
+                !isCollapsed && "mr-3"
               )} />
-              {item.name}
+              {!isCollapsed && <span>{item.name}</span>}
             </NavLink>
           ))}
         </nav>
@@ -79,17 +86,19 @@ export default function Sidebar() {
           <NavLink
             key={item.name}
             to={item.path}
+            title={isCollapsed ? item.name : undefined}
             className={({ isActive }) =>
               cn(
-                "group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                "group flex items-center py-2 text-sm font-medium rounded-lg transition-colors",
+                isCollapsed ? "justify-center px-0" : "px-3",
                 isActive 
                   ? "bg-primary/10 text-primary" 
                   : "text-textSecondary hover:bg-surfaceHover hover:text-textPrimary"
               )
             }
           >
-            <item.icon className="mr-3 flex-shrink-0 h-5 w-5" />
-            {item.name}
+            <item.icon className={cn("flex-shrink-0 h-5 w-5", !isCollapsed && "mr-3")} />
+            {!isCollapsed && <span>{item.name}</span>}
           </NavLink>
         ))}
       </div>

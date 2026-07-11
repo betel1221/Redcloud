@@ -33,14 +33,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(26, 26, 26, 0.5);
+  background: #F9FAFB;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(82, 82, 82, 0.8);
+  background: #D1D5DB;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(115, 115, 115, 1);
+  background: #9CA3AF;
 }

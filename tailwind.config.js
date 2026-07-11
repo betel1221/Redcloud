@@ -11,13 +11,13 @@ export default {
         background: '#FFFFFF', // Pitch black
         surface: '#F9FAFB', // Darkest gray for cards
         surfaceHover: '#FEE2E2',
-        primary: '#FFFFFF', // Pure white accent
+        primary: '#EF4444', // Brand red accent
         success: '#34D399', // Muted green
         warning: '#FBBF24', // Muted amber
         danger: '#FECACA', // Muted red
-        textPrimary: '#FFFFFF',
-        textSecondary: '#A3A3A3',
-        border: '#FECACA',
+        textPrimary: '#111111',
+        textSecondary: '#4B5563',
+        border: '#E5E7EB',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

@@ -10,15 +10,23 @@ export default function Landing() {
       {/* Navbar */}
       <nav className="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center relative z-20">
         <div className="flex items-center space-x-2">
-          <Activity className="w-8 h-8 text-[#DC2626]" />
+          <Activity className="w-8 h-8 text-[#EF4444]" />
           <span className="text-xl font-bold tracking-widest uppercase">Redhelp</span>
         </div>
-        <button 
-          onClick={() => navigate('/login')}
-          className="px-6 py-2 border border-[#FECACA] rounded-md hover:bg-[#DC2626]/5 transition-all duration-300 font-medium text-sm text-black"
-        >
-          Sign In
-        </button>
+        <div className="flex items-center space-x-4">
+          <button 
+            onClick={() => navigate('/login')}
+            className="px-6 py-2 border border-[#FECACA] rounded-md hover:bg-[#EF4444]/5 transition-all duration-300 font-medium text-sm text-black"
+          >
+            Sign In
+          </button>
+          <button 
+            onClick={() => navigate('/signup')}
+            className="px-6 py-2 bg-[#EF4444] text-white rounded-md hover:bg-[#DC2626] transition-all duration-300 font-medium text-sm shadow-sm"
+          >
+            Sign Up
+          </button>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -42,7 +50,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <button 
               onClick={() => navigate('/login')}
-              className="group px-8 py-4 bg-[#DC2626] text-white rounded-md font-bold text-lg hover:bg-[#B91C1C] transition-all duration-300 flex items-center"
+              className="group px-8 py-4 bg-[#EF4444] text-white rounded-md font-bold text-lg hover:bg-[#DC2626] transition-all duration-300 flex items-center shadow-md shadow-[#EF4444]/20"
             >
               Access Dashboard
               <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -53,21 +61,21 @@ export default function Landing() {
         {/* Feature Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mt-32 z-10">
           <div className="bg-[#F9FAFB] p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-[#FECACA] rounded-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[#DC2626]/5 flex items-center justify-center mb-6 border border-[#DC2626]/10 group-hover:bg-[#DC2626]/10 transition-colors">
+            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/5 flex items-center justify-center mb-6 border border-[#EF4444]/10 group-hover:bg-[#EF4444]/10 transition-colors">
               <Zap className="w-6 h-6 text-black" />
             </div>
             <h3 className="text-xl font-bold mb-3 text-black">Real-time Telemetry</h3>
             <p className="text-[#4B5563] text-sm leading-relaxed">Instant insights into CPU, Memory, and AI Inference latency with zero delay.</p>
           </div>
           <div className="bg-[#F9FAFB] p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-[#FECACA] rounded-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[#DC2626]/5 flex items-center justify-center mb-6 border border-[#DC2626]/10 group-hover:bg-[#DC2626]/10 transition-colors">
+            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/5 flex items-center justify-center mb-6 border border-[#EF4444]/10 group-hover:bg-[#EF4444]/10 transition-colors">
               <Shield className="w-6 h-6 text-black" />
             </div>
             <h3 className="text-xl font-bold mb-3 text-black">Threat Mitigation</h3>
             <p className="text-[#4B5563] text-sm leading-relaxed">Enterprise-grade security monitoring with automated intrusion response protocols.</p>
           </div>
           <div className="bg-[#F9FAFB] p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-[#FECACA] rounded-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[#DC2626]/5 flex items-center justify-center mb-6 border border-[#DC2626]/10 group-hover:bg-[#DC2626]/10 transition-colors">
+            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/5 flex items-center justify-center mb-6 border border-[#EF4444]/10 group-hover:bg-[#EF4444]/10 transition-colors">
               <Network className="w-6 h-6 text-black" />
             </div>
             <h3 className="text-xl font-bold mb-3 text-black">Distributed RAG</h3>
@@ -77,7 +85,7 @@ export default function Landing() {
       </main>
 
       {/* Footer */}
-      <footer className="py-8 text-center text-textSecondary text-sm z-10 border-t border-[#DC2626]/10 mt-20">
+      <footer className="py-8 text-center text-textSecondary text-sm z-10 border-t border-[#EF4444]/10 mt-20">
         <p>&copy; 2026 Redhelp All rights reserved.</p>
       </footer>
     </div>

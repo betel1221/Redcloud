@@ -93,22 +93,22 @@ export default function DashboardOverview() {
               <AreaChart data={mockPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="colorMemory" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#A3A3A3" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#A3A3A3" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2E3B52" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                 <XAxis dataKey="time" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#1A2235', borderColor: '#2E3B52', borderRadius: '8px' }}
-                  itemStyle={{ color: '#F8FAFC' }}
+                  contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '8px' }}
+                  itemStyle={{ color: '#111111' }}
                 />
-                <Area type="monotone" dataKey="cpu" stroke="#FFFFFF" strokeWidth={2} fillOpacity={1} fill="url(#colorCpu)" name="CPU Usage %" />
+                <Area type="monotone" dataKey="cpu" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#colorCpu)" name="CPU Usage %" />
                 <Area type="monotone" dataKey="memory" stroke="#A3A3A3" strokeWidth={2} fillOpacity={1} fill="url(#colorMemory)" name="Memory Usage %" />
               </AreaChart>
             </ResponsiveContainer>

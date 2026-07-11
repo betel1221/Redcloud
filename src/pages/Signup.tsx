@@ -63,7 +63,7 @@ export default function Signup() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in">
         <div className="flex justify-center items-center mb-6">
           <Link to="/" className="bg-[#F9FAFB] p-3 rounded-2xl border border-[#FECACA] hover:bg-[#FEE2E2] transition-colors cursor-pointer">
-            <Activity className="w-10 h-10 text-[#DC2626]" />
+            <Activity className="w-10 h-10 text-[#EF4444]" />
           </Link>
         </div>
         <h2 className="text-center text-3xl font-bold text-black tracking-tight">
@@ -168,7 +168,7 @@ export default function Signup() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-[#DC2626] hover:bg-[#B91C1C] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#DC2626] focus:ring-offset-[#FFFFFF] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-[#EF4444] hover:bg-[#DC2626] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EF4444] focus:ring-offset-[#FFFFFF] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin text-white" />

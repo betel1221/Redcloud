@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import './HealthSummary.css';
 
 // Elite Monochrome Palette
-const COLORS = ['#ffffff', '#bbbbbb', '#777777', '#333333'];
+const COLORS = ['#EF4444', '#ffffff', '#777777', '#333333'];
 
 const mockData = [
   { name: 'Database', value: 85 },

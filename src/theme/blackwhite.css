@@ -1,11 +1,11 @@
 /* src/theme/blackwhite.css */
 /* Black‑white high‑contrast theme */
 :root {
-  --bg-color: #000000;
-  --text-color: #ffffff;
-  --primary-color: #ff6600; /* accent */
-  --card-bg: #111111;
-  --card-border: #333333;
+  --bg-color: #F9FAFB;
+  --text-color: #111111;
+  --primary-color: #EF4444; /* accent */
+  --card-bg: #FFFFFF;
+  --card-border: #E5E7EB;
 }
 
 body {
