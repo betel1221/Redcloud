@@ -54,7 +54,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#DC2626] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
       <Link to="/" className="absolute top-8 left-8 flex items-center text-[#A1A1AA] hover:text-white transition-colors group z-20 text-sm font-medium">
         <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
         Back to Home
@@ -62,7 +62,7 @@ export default function Signup() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in">
         <div className="flex justify-center items-center mb-6">
-          <Link to="/" className="bg-[#09090b] p-3 rounded-2xl border border-[#27272A] hover:bg-[#121214] transition-colors cursor-pointer">
+          <Link to="/" className="bg-[#B91C1C] p-3 rounded-2xl border border-[#F87171] hover:bg-[#991B1B] transition-colors cursor-pointer">
             <Activity className="w-10 h-10 text-white" />
           </Link>
         </div>
@@ -75,7 +75,7 @@ export default function Signup() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
-        <div className="bg-[#09090b] py-8 px-4 sm:px-10 border border-[#27272A] rounded-lg shadow-xl">
+        <div className="bg-[#B91C1C] py-8 px-4 sm:px-10 border border-[#F87171] rounded-lg shadow-xl">
           <form className="space-y-5" onSubmit={handleSubmit} noValidate>
             
             {errors.submit && (
@@ -97,7 +97,7 @@ export default function Signup() {
                   autoComplete="name"
                   value={name}
                   onChange={(e) => { setName(e.target.value); if (errors.name) setErrors({...errors, name: ''}); }}
-                  className={`block w-full pl-10 bg-[#000000] border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#27272A] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 bg-[#DC2626] border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#F87171] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="John Doe"
                 />
               </div>
@@ -117,7 +117,7 @@ export default function Signup() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({...errors, email: ''}); }}
-                  className={`block w-full pl-10 bg-[#000000] border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#27272A] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 bg-[#DC2626] border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#F87171] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="admin@company.com"
                 />
               </div>
@@ -137,7 +137,7 @@ export default function Signup() {
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors({...errors, password: ''}); }}
-                  className={`block w-full pl-10 bg-[#000000] border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#27272A] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 bg-[#DC2626] border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#F87171] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="••••••••"
                 />
               </div>
@@ -157,7 +157,7 @@ export default function Signup() {
                   autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => { setConfirmPassword(e.target.value); if (errors.confirmPassword) setErrors({...errors, confirmPassword: ''}); }}
-                  className={`block w-full pl-10 bg-[#000000] border ${errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-[#27272A] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 bg-[#DC2626] border ${errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-[#F87171] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="••••••••"
                 />
               </div>
@@ -168,7 +168,7 @@ export default function Signup() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-black bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-[#000000] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-black bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-[#DC2626] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin text-black" />
