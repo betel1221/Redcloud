@@ -8,16 +8,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#DC2626', // Pitch black
-        surface: '#B91C1C', // Darkest gray for cards
-        surfaceHover: '#991B1B',
+        background: '#FFFFFF', // Pitch black
+        surface: '#F9FAFB', // Darkest gray for cards
+        surfaceHover: '#FEE2E2',
         primary: '#FFFFFF', // Pure white accent
         success: '#34D399', // Muted green
         warning: '#FBBF24', // Muted amber
-        danger: '#F87171', // Muted red
+        danger: '#FECACA', // Muted red
         textPrimary: '#FFFFFF',
         textSecondary: '#A3A3A3',
-        border: '#F87171',
+        border: '#FECACA',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

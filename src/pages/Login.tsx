@@ -44,28 +44,28 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#DC2626] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
-      <Link to="/" className="absolute top-8 left-8 flex items-center text-[#A1A1AA] hover:text-white transition-colors group z-20 text-sm font-medium">
+    <div className="min-h-screen bg-[#FFFFFF] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      <Link to="/" className="absolute top-8 left-8 flex items-center text-[#4B5563] hover:text-black transition-colors group z-20 text-sm font-medium">
         <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
         Back to Home
       </Link>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in">
         <div className="flex justify-center items-center mb-6">
-          <Link to="/" className="bg-[#B91C1C] p-3 rounded-2xl border border-[#F87171] hover:bg-[#991B1B] transition-colors cursor-pointer">
-            <Activity className="w-10 h-10 text-white" />
+          <Link to="/" className="bg-[#F9FAFB] p-3 rounded-2xl border border-[#FECACA] hover:bg-[#FEE2E2] transition-colors cursor-pointer">
+            <Activity className="w-10 h-10 text-[#DC2626]" />
           </Link>
         </div>
-        <h2 className="text-center text-3xl font-bold text-white tracking-tight">
+        <h2 className="text-center text-3xl font-bold text-black tracking-tight">
           Sign in to Redhelp
         </h2>
-        <p className="mt-2 text-center text-sm text-[#A1A1AA]">
+        <p className="mt-2 text-center text-sm text-[#4B5563]">
           Welcome back to the Operations Platform
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
-        <div className="bg-[#B91C1C] py-8 px-4 sm:px-10 border border-[#F87171] rounded-lg shadow-xl">
+        <div className="bg-[#F9FAFB] py-8 px-4 sm:px-10 border border-[#FECACA] rounded-lg shadow-xl">
           <form className="space-y-5" onSubmit={handleSubmit} noValidate>
             
             {errors.submit && (
@@ -75,12 +75,12 @@ export default function Login() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white">
+              <label htmlFor="email" className="block text-sm font-medium text-black">
                 Email address
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-[#A1A1AA]" />
+                  <Mail className="h-5 w-5 text-[#4B5563]" />
                 </div>
                 <input
                   id="email"
@@ -89,7 +89,7 @@ export default function Login() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({...errors, email: ''}); }}
-                  className={`block w-full pl-10 bg-[#DC2626] border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#F87171] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 bg-[#FFFFFF] border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#FECACA] focus:ring-white'} rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="admin@company.com"
                 />
               </div>
@@ -97,12 +97,12 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white">
+              <label htmlFor="password" className="block text-sm font-medium text-black">
                 Password
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-[#A1A1AA]" />
+                  <Lock className="h-5 w-5 text-[#4B5563]" />
                 </div>
                 <input
                   id="password"
@@ -111,7 +111,7 @@ export default function Login() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors({...errors, password: ''}); }}
-                  className={`block w-full pl-10 bg-[#DC2626] border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#F87171] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 bg-[#FFFFFF] border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#FECACA] focus:ring-white'} rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="••••••••"
                 />
               </div>
@@ -124,15 +124,15 @@ export default function Login() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 bg-[#DC2626] border-[#F87171] rounded text-white focus:ring-white focus:ring-offset-[#DC2626] accent-white"
+                  className="h-4 w-4 bg-[#FFFFFF] border-[#FECACA] rounded text-black focus:ring-white focus:ring-offset-[#FFFFFF] accent-white"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#A1A1AA]">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#4B5563]">
                   Remember me
                 </label>
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-white hover:underline transition-colors">
+                <a href="#" className="font-medium text-black hover:underline transition-colors">
                   Forgot your password?
                 </a>
               </div>
@@ -142,10 +142,10 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-black bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-[#DC2626] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-[#DC2626] hover:bg-[#B91C1C] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#DC2626] focus:ring-offset-[#FFFFFF] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-black" />
+                  <Loader2 className="w-5 h-5 animate-spin text-white" />
                 ) : (
                   'Sign In'
                 )}
@@ -154,8 +154,8 @@ export default function Login() {
           </form>
           
           <div className="mt-6 text-center text-sm">
-            <span className="text-[#A1A1AA]">Don't have an account? </span>
-            <Link to="/signup" className="font-medium text-white hover:underline transition-colors">
+            <span className="text-[#4B5563]">Don't have an account? </span>
+            <Link to="/signup" className="font-medium text-black hover:underline transition-colors">
               Sign up
             </Link>
           </div>
