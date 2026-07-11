@@ -1,0 +1,161 @@
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Activity, Lock, Mail, Loader2 } from 'lucide-react';
+
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!email) {
+      newErrors.email = 'Email address is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    if (!password) {
+      newErrors.password = 'Password is required';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    
+    setIsLoading(true);
+    try {
+      // Backend integration happens here
+      await login(email);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login failed:', error);
+      setErrors({ submit: 'Invalid email or password' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#000000] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in">
+        <div className="flex justify-center items-center mb-6">
+          <Link to="/" className="bg-[#09090b] p-3 rounded-2xl border border-[#27272A] hover:bg-[#121214] transition-colors cursor-pointer">
+            <Activity className="w-10 h-10 text-white" />
+          </Link>
+        </div>
+        <h2 className="text-center text-3xl font-bold text-white tracking-tight">
+          Sign in to Redhelp
+        </h2>
+        <p className="mt-2 text-center text-sm text-[#A1A1AA]">
+          Welcome back to the Operations Platform
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
+        <div className="bg-[#09090b] py-8 px-4 sm:px-10 border border-[#27272A] rounded-lg shadow-xl">
+          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+            
+            {errors.submit && (
+              <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-md">
+                <p className="text-sm text-red-500 font-medium text-center">{errors.submit}</p>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-white">
+                Email address
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-[#A1A1AA]" />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({...errors, email: ''}); }}
+                  className={`block w-full pl-10 bg-[#000000] border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#27272A] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  placeholder="admin@company.com"
+                />
+              </div>
+              {errors.email && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-white">
+                Password
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-[#A1A1AA]" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors({...errors, password: ''}); }}
+                  className={`block w-full pl-10 bg-[#000000] border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#27272A] focus:ring-white'} rounded-md py-2.5 text-white placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  placeholder="••••••••"
+                />
+              </div>
+              {errors.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.password}</p>}
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 bg-[#000000] border-[#27272A] rounded text-white focus:ring-white focus:ring-offset-[#000000] accent-white"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#A1A1AA]">
+                  Remember me
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <a href="#" className="font-medium text-white hover:underline transition-colors">
+                  Forgot your password?
+                </a>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-black bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-[#000000] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-black" />
+                ) : (
+                  'Sign In'
+                )}
+              </button>
+            </div>
+          </form>
+          
+          <div className="mt-6 text-center text-sm">
+            <span className="text-[#A1A1AA]">Don't have an account? </span>
+            <Link to="/signup" className="font-medium text-white hover:underline transition-colors">
+              Sign up
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
