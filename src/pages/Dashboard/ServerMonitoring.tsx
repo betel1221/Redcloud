@@ -1,6 +1,7 @@
 import React from 'react';
 import { Server, Cpu, HardDrive, Network, Activity, ArrowUpRight, ArrowDownRight, Info } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+import AIChat from '../../components/ui/AIChat';
 
 const mockServerData = [
   { name: 'Application Server 01', status: 'Running', cpu: 92, memory: 74, disk: 62, network: '450 Mbps', uptime: '45 Days' },
@@ -81,39 +82,35 @@ export default function ServerMonitoring() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 h-full flex flex-col">
           <div className="glass-panel p-6">
-            <h2 className="text-sm font-bold text-textPrimary mb-2 flex items-center">
-              <Cpu className="w-4 h-4 mr-2 text-danger" /> Critical Load Alert
-            </h2>
-            <div className="h-24 w-full mb-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={cpuTrend}>
-                  <defs>
-                    <linearGradient id="colorDanger" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="val" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#colorDanger)" />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="flex items-center mb-4">
+              <Activity className="w-5 h-5 text-warning mr-2" />
+              <h2 className="text-sm font-bold text-textPrimary uppercase tracking-wider">Updates & Alerts</h2>
             </div>
-            <p className="text-3xl font-bold text-danger mb-1">92%</p>
-            <p className="text-xs text-textSecondary">App Server 01 CPU Spike</p>
+            <div className="space-y-3">
+              <div className="p-3 border border-border rounded-lg bg-surfaceHover/50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-danger">CPU Spike</span>
+                  <span className="text-[10px] text-textSecondary">Now</span>
+                </div>
+                <p className="text-xs text-textSecondary">App Server 01 CPU at 92%.</p>
+              </div>
+              <div className="p-3 border border-border rounded-lg bg-surfaceHover/50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-warning">Node Restarting</span>
+                  <span className="text-[10px] text-textSecondary">10m ago</span>
+                </div>
+                <p className="text-xs text-textSecondary">Worker Node B restarting after crash.</p>
+              </div>
+            </div>
           </div>
 
-          <div className="glass-panel p-6 border border-warning/30 bg-warning/5">
-            <div className="flex items-center mb-3">
-              <Info className="w-5 h-5 text-warning mr-2" />
-              <h2 className="text-sm font-bold text-warning uppercase tracking-wider">AI Insight</h2>
-            </div>
-            <p className="text-sm text-textPrimary mb-3 leading-relaxed">
-              CPU utilization on <span className="font-mono text-xs bg-background px-1 py-0.5 rounded border border-border">App Server 01</span> is consistently high.
-            </p>
-            <div className="bg-background/50 border border-border p-3 rounded-lg text-sm text-textSecondary">
-              Investigate the FastAPI worker processes causing high load. Consider horizontal scaling.
-            </div>
+          <div className="flex-1 min-h-[400px]">
+            <AIChat 
+              title="Server Assistant" 
+              contextPlaceholder="Ask about metrics, logs, or scaling..." 
+            />
           </div>
         </div>
       </div>

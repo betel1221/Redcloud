@@ -1,6 +1,7 @@
 import React from 'react';
 import { Database, Activity, HardDrive, Zap, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import AIChat from '../../components/ui/AIChat';
 
 const mockDbData = [
   { name: 'CompanyERP', status: 'Healthy', tables: 128, connections: 35, storage: '152 GB', slowQueries: 3, risk: 'Low' },
@@ -102,41 +103,35 @@ export default function DatabaseMonitoring() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="glass-panel p-6 h-64 flex flex-col">
-            <h2 className="text-sm font-bold text-textPrimary mb-4">Query Performance (Req/s)</h2>
-            <div className="flex-1 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockQueryPerformance}>
-                  <defs>
-                    <linearGradient id="colorQueries" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1A2235', borderColor: '#2E3B52' }}
-                    itemStyle={{ color: '#F8FAFC' }}
-                  />
-                  <Area type="monotone" dataKey="queries" stroke="#FFFFFF" strokeWidth={2} fillOpacity={1} fill="url(#colorQueries)" />
-                </AreaChart>
-              </ResponsiveContainer>
+        <div className="space-y-6 h-full flex flex-col">
+          <div className="glass-panel p-6">
+            <div className="flex items-center mb-4">
+              <Zap className="w-5 h-5 text-warning mr-2" />
+              <h2 className="text-sm font-bold text-textPrimary uppercase tracking-wider">Updates & Alerts</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 border border-border rounded-lg bg-surfaceHover/50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-danger">Missing Index</span>
+                  <span className="text-[10px] text-textSecondary">2m ago</span>
+                </div>
+                <p className="text-xs text-textSecondary">CompanyERP <code className="bg-background px-1 py-0.5 rounded text-primary">customer_id</code> missing index.</p>
+              </div>
+              <div className="p-3 border border-border rounded-lg bg-surfaceHover/50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-warning">High Connections</span>
+                  <span className="text-[10px] text-textSecondary">15m ago</span>
+                </div>
+                <p className="text-xs text-textSecondary">FinanceDB connection pool nearing capacity limit.</p>
+              </div>
             </div>
           </div>
 
-          <div className="glass-panel p-6 border border-primary/30 relative overflow-hidden group">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/20 rounded-full blur-2xl group-hover:bg-primary/30 transition-colors"></div>
-            <div className="flex items-center mb-3 relative z-10">
-              <Zap className="w-5 h-5 text-primary mr-2" />
-              <h2 className="text-sm font-bold text-primary uppercase tracking-wider">AI Recommendation</h2>
-            </div>
-            <h3 className="font-bold text-textPrimary mb-2 relative z-10">CompanyERP</h3>
-            <p className="text-sm text-textSecondary leading-relaxed relative z-10">
-              Customer table missing index on <code className="bg-surface px-1 py-0.5 rounded text-primary">customer_id</code>.
-            </p>
-            <button className="mt-4 w-full bg-primary/10 hover:bg-primary/20 text-primary font-medium py-2 rounded-lg text-sm transition-colors border border-primary/20 relative z-10">
-              Generate SQL Fix
-            </button>
+          <div className="flex-1 min-h-[400px]">
+            <AIChat 
+              title="Database Assistant" 
+              contextPlaceholder="Ask about schemas, queries, or performance..." 
+            />
           </div>
         </div>
       </div>

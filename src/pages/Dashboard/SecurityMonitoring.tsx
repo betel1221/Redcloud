@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldAlert, UserX, UserCheck, Shield, Lock, AlertOctagon, TrendingUp, Search } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import AIChat from '../../components/ui/AIChat';
 
 const securityEvents = [
   { time: '10:00', failed: 12, blocked: 4 },
@@ -97,62 +98,35 @@ export default function SecurityMonitoring() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 h-full flex flex-col">
           <div className="glass-panel p-6">
-            <h2 className="text-lg font-bold text-textPrimary mb-4">Today's Threats</h2>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-danger font-medium">Critical</span>
-                  <span className="text-textPrimary font-bold">1</span>
+            <div className="flex items-center mb-4">
+              <ShieldAlert className="w-5 h-5 text-danger mr-2" />
+              <h2 className="text-sm font-bold text-textPrimary uppercase tracking-wider">Updates & Alerts</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 border border-border rounded-lg bg-surfaceHover/50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-danger">Brute Force Attack</span>
+                  <span className="text-[10px] text-textSecondary">5m ago</span>
                 </div>
-                <div className="w-full bg-background rounded-full h-2">
-                  <div className="h-2 rounded-full bg-danger w-[5%]"></div>
-                </div>
+                <p className="text-xs text-textSecondary">Multiple failed logins from 192.168.10.25 blocked.</p>
               </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-warning font-medium">High</span>
-                  <span className="text-textPrimary font-bold">3</span>
+              <div className="p-3 border border-border rounded-lg bg-surfaceHover/50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-warning">New CVE</span>
+                  <span className="text-[10px] text-textSecondary">1h ago</span>
                 </div>
-                <div className="w-full bg-background rounded-full h-2">
-                  <div className="h-2 rounded-full bg-warning w-[15%]"></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-primary font-medium">Medium</span>
-                  <span className="text-textPrimary font-bold">7</span>
-                </div>
-                <div className="w-full bg-background rounded-full h-2">
-                  <div className="h-2 rounded-full bg-primary w-[35%]"></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-textSecondary font-medium">Low</span>
-                  <span className="text-textPrimary font-bold">22</span>
-                </div>
-                <div className="w-full bg-background rounded-full h-2">
-                  <div className="h-2 rounded-full bg-border w-full"></div>
-                </div>
+                <p className="text-xs text-textSecondary">Vulnerability detected in openssl package.</p>
               </div>
             </div>
           </div>
 
-          <div className="glass-panel p-6 border-danger/30 bg-danger/5 relative overflow-hidden">
-            <div className="absolute right-0 top-0 w-24 h-24 bg-danger/10 rounded-full blur-xl -mr-10 -mt-10"></div>
-            <div className="flex items-center mb-3 relative z-10">
-              <ShieldAlert className="w-5 h-5 text-danger mr-2" />
-              <h2 className="text-sm font-bold text-danger uppercase tracking-wider">AI Security Summary</h2>
-            </div>
-            <p className="text-sm text-textPrimary mb-3 leading-relaxed relative z-10">
-              Multiple failed logins detected from <span className="text-danger font-mono font-bold bg-danger/10 px-1 rounded">192.168.10.25</span>.
-            </p>
-            <div className="bg-background/80 border border-border p-3 rounded-lg text-sm text-textSecondary relative z-10">
-              <strong className="text-textPrimary block mb-1">Diagnosis:</strong>
-              Possible brute-force attack targeting Admin accounts. IP has been temporarily blocked by firewall rules.
-            </div>
+          <div className="flex-1 min-h-[400px]">
+            <AIChat 
+              title="Security Assistant" 
+              contextPlaceholder="Ask about threats, vulnerabilities, or logs..." 
+            />
           </div>
         </div>
       </div>

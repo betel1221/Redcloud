@@ -2,15 +2,10 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Bot, 
   Database, 
   Server, 
   ShieldAlert, 
   Bell, 
-  Lightbulb, 
-  FileText, 
-  BookOpen, 
-  MessageSquare,
   Settings,
   User,
   Activity
@@ -19,15 +14,10 @@ import { cn } from '../../lib/utils';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'AI Assistant', path: '/dashboard/ai', icon: Bot },
   { name: 'Database Monitoring', path: '/dashboard/database', icon: Database },
   { name: 'Server Monitoring', path: '/dashboard/server', icon: Server },
   { name: 'Security Monitoring', path: '/dashboard/security', icon: ShieldAlert },
   { name: 'Alerts', path: '/dashboard/alerts', icon: Bell },
-  { name: 'Recommendations', path: '/dashboard/recommendations', icon: Lightbulb },
-  { name: 'Reports', path: '/dashboard/reports', icon: FileText },
-  { name: 'Logs', path: '/dashboard/logs', icon: MessageSquare },
-  { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: BookOpen },
 ];
 
 const bottomItems = [
