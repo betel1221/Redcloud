@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Activity, Lock, Mail, Loader2, User } from 'lucide-react';
+import { Activity, Lock, Mail, Loader2, User, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Signup() {
@@ -55,6 +55,11 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen bg-[#000000] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      <Link to="/" className="absolute top-8 left-8 flex items-center text-[#A1A1AA] hover:text-white transition-colors group z-20 text-sm font-medium">
+        <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+        Back to Home
+      </Link>
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in">
         <div className="flex justify-center items-center mb-6">
           <Link to="/" className="bg-[#09090b] p-3 rounded-2xl border border-[#27272A] hover:bg-[#121214] transition-colors cursor-pointer">
