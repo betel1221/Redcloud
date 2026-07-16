@@ -1,7 +1,7 @@
 import React from 'react';
 import { Server, Cpu, HardDrive, Network, Activity, ArrowUpRight, ArrowDownRight, Info } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
-import AIChat from '../../components/ui/AIChat';
+
 
 const mockServerData = [
   { name: 'Application Server 01', status: 'Running', cpu: 92, memory: 74, disk: 62, network: '450 Mbps', uptime: '45 Days' },
@@ -106,12 +106,6 @@ export default function ServerMonitoring() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[400px]">
-            <AIChat 
-              title="Server Assistant" 
-              contextPlaceholder="Ask about metrics, logs, or scaling..." 
-            />
-          </div>
         </div>
       </div>
     </div>

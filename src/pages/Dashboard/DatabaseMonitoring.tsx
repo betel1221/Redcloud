@@ -1,7 +1,7 @@
 import React from 'react';
 import { Database, Activity, HardDrive, Zap, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import AIChat from '../../components/ui/AIChat';
+
 
 const mockDbData = [
   { name: 'CompanyERP', status: 'Healthy', tables: 128, connections: 35, storage: '152 GB', slowQueries: 3, risk: 'Low' },
@@ -127,12 +127,6 @@ export default function DatabaseMonitoring() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[400px]">
-            <AIChat 
-              title="Database Assistant" 
-              contextPlaceholder="Ask about schemas, queries, or performance..." 
-            />
-          </div>
         </div>
       </div>
     </div>

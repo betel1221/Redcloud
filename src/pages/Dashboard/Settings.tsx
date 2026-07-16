@@ -18,7 +18,7 @@ export default function Settings() {
             <SettingsIcon className="w-6 h-6 mr-3 text-primary" />
             System Settings
           </h1>
-          <p className="text-textSecondary mt-1">Configure global ERAOP preferences (Admin Only).</p>
+          <p className="text-textSecondary mt-1">Configure global Redhelp preferences (Admin Only).</p>
         </div>
         <button 
           onClick={handleSave}
@@ -79,7 +79,7 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-textPrimary">Platform Name</label>
-                    <input type="text" defaultValue="ERAOP Production" className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" />
+                    <input type="text" defaultValue="Redhelp Production" className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-textPrimary">Support Email</label>
@@ -144,7 +144,7 @@ export default function Settings() {
             {activeTab === 'api' && (
               <div className="space-y-6 animate-fade-in">
                 <h2 className="text-lg font-bold text-textPrimary mb-4">Global API Keys</h2>
-                <p className="text-sm text-textSecondary mb-6">Manage API keys used by external services to ingest logs into ERAOP.</p>
+                <p className="text-sm text-textSecondary mb-6">Manage API keys used by external services to ingest logs into Redhelp.</p>
                 
                 <div className="p-4 border border-border rounded-xl bg-surfaceHover/30 flex justify-between items-center">
                   <div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShieldAlert, UserX, UserCheck, Shield, Lock, AlertOctagon, TrendingUp, Search } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import AIChat from '../../components/ui/AIChat';
+
 
 const securityEvents = [
   { time: '10:00', failed: 12, blocked: 4 },
@@ -122,12 +122,6 @@ export default function SecurityMonitoring() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[400px]">
-            <AIChat 
-              title="Security Assistant" 
-              contextPlaceholder="Ask about threats, vulnerabilities, or logs..." 
-            />
-          </div>
         </div>
       </div>
     </div>

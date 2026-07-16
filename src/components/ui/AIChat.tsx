@@ -16,7 +16,7 @@ interface AIChatProps {
 }
 
 export default function AIChat({ 
-  title = "ERAOP Assistant", 
+  title = "Redhelp Assistant", 
   contextPlaceholder = "Ask about infrastructure, alerts, or system health...",
   initialMessages = []
 }: AIChatProps) {

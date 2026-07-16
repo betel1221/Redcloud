@@ -8,7 +8,8 @@ import {
   Bell, 
   Settings,
   User,
-  Activity
+  Activity,
+  Bot
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -17,6 +18,7 @@ const navItems = [
   { name: 'Database Monitoring', path: '/dashboard/database', icon: Database },
   { name: 'Server Monitoring', path: '/dashboard/server', icon: Server },
   { name: 'Security Monitoring', path: '/dashboard/security', icon: ShieldAlert },
+  { name: 'AI Assistant', path: '/dashboard/ai', icon: Bot },
   { name: 'Alerts', path: '/dashboard/alerts', icon: Bell },
 ];
 
@@ -37,7 +39,7 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
     )}>
       <div className="h-16 flex items-center justify-center px-4 border-b border-border">
         <Activity className="w-6 h-6 text-primary flex-shrink-0" />
-        {!isCollapsed && <span className="text-lg font-bold text-textPrimary tracking-wider ml-2">ERAOP</span>}
+        {!isCollapsed && <span className="text-lg font-bold text-textPrimary tracking-wider ml-2">Redhelp</span>}
       </div>
       
       <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">

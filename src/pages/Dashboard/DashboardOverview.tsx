@@ -1,7 +1,9 @@
-import React from 'react';
-import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, ChevronRight, Bot } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, ChevronRight, Bot, Loader2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+// --- MOCK DATA ---
+// Backend developers: Replace these with real API calls
 const mockPerformanceData = [
   { time: '09:00', cpu: 45, memory: 60 },
   { time: '09:10', cpu: 55, memory: 65 },
@@ -11,6 +13,35 @@ const mockPerformanceData = [
   { time: '09:50', cpu: 92, memory: 82 },
   { time: '10:00', cpu: 65, memory: 75 },
 ];
+
+const mockHealthData = {
+  dbHealth: 98,
+  dbStatus: 'Optimal performance',
+  serverHealth: 96,
+  serverStatus: 'All systems operational',
+  securityScore: 82,
+  securityStatus: 'Moderate risk detected',
+  aiSystemRunning: true,
+};
+
+const mockAlertsSummary = {
+  critical: 2,
+  high: 5,
+  medium: 10,
+  low: 18,
+};
+
+const mockRecommendation = {
+  title: 'Database Server Memory Usage Increasing.',
+  description: 'Increase RAM or optimize cache settings to prevent upcoming bottlenecks.',
+};
+
+const mockNotifications = [
+  { id: 1, severity: 'Critical', event: 'Server 02 CPU High', source: 'Application Server', time: '2 mins ago' },
+  { id: 2, severity: 'Critical', event: 'Database Connection Timeout', source: 'CompanyERP DB', time: '15 mins ago' },
+  { id: 3, severity: 'High', event: 'Firewall Login Attempts', source: 'Gateway 01', time: '1 hour ago' },
+];
+// -----------------
 
 const StatCard = ({ title, value, icon: Icon, colorClass, statusText }: any) => (
   <div className="glass-card flex flex-col relative overflow-hidden">
@@ -31,6 +62,46 @@ const StatCard = ({ title, value, icon: Icon, colorClass, statusText }: any) => 
 );
 
 export default function DashboardOverview() {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    // Backend developers: Replace this setTimeout with your actual fetch calls
+    // e.g., const res = await fetch('/api/dashboard'); const json = await res.json(); setData(json);
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Simulating network delay
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        setData({
+          performance: mockPerformanceData,
+          health: mockHealthData,
+          alerts: mockAlertsSummary,
+          recommendation: mockRecommendation,
+          notifications: mockNotifications
+        });
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading || !data) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[600px]">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <span className="ml-3 text-textSecondary font-medium">Loading Dashboard Data...</span>
+      </div>
+    );
+  }
+
+  const { health, alerts, recommendation, notifications, performance } = data;
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -39,11 +110,22 @@ export default function DashboardOverview() {
           <p className="text-textSecondary mt-1">Real-time overview of your enterprise systems.</p>
         </div>
         <div className="flex items-center space-x-2 text-sm">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
-          </span>
-          <span className="text-success font-medium">AI System Running</span>
+          {health.aiSystemRunning ? (
+            <>
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
+              </span>
+              <span className="text-success font-medium">AI System Running</span>
+            </>
+          ) : (
+            <>
+              <span className="relative flex h-3 w-3">
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-danger"></span>
+              </span>
+              <span className="text-danger font-medium">AI System Offline</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -51,24 +133,24 @@ export default function DashboardOverview() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Database Health" 
-          value="98%" 
+          value={`${health.dbHealth}%`} 
           icon={Database} 
           colorClass={{ bg: 'bg-success', text: 'text-success', border: 'border-success/30' }}
-          statusText="Optimal performance"
+          statusText={health.dbStatus}
         />
         <StatCard 
           title="Server Health" 
-          value="96%" 
+          value={`${health.serverHealth}%`} 
           icon={Server} 
           colorClass={{ bg: 'bg-success', text: 'text-success', border: 'border-success/30' }}
-          statusText="All systems operational"
+          statusText={health.serverStatus}
         />
         <StatCard 
           title="Security Score" 
-          value="82%" 
+          value={`${health.securityScore}%`} 
           icon={ShieldCheck} 
           colorClass={{ bg: 'bg-warning', text: 'text-warning', border: 'border-warning/30' }}
-          statusText="Moderate risk detected"
+          statusText={health.securityStatus}
         />
         <div className="glass-card flex flex-col justify-center items-center text-center group cursor-pointer">
           <Activity className="w-8 h-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
@@ -90,7 +172,7 @@ export default function DashboardOverview() {
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={performance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
@@ -126,28 +208,28 @@ export default function DashboardOverview() {
                   <div className="w-2 h-2 rounded-full bg-danger mr-3"></div>
                   <span className="text-sm font-medium">Critical</span>
                 </div>
-                <span className="bg-danger/20 text-danger text-xs font-bold px-2 py-1 rounded-full">2</span>
+                <span className="bg-danger/20 text-danger text-xs font-bold px-2 py-1 rounded-full">{alerts.critical}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-surfaceHover border border-border">
                 <div className="flex items-center">
                   <div className="w-2 h-2 rounded-full bg-warning mr-3"></div>
                   <span className="text-sm font-medium">High</span>
                 </div>
-                <span className="bg-warning/20 text-warning text-xs font-bold px-2 py-1 rounded-full">5</span>
+                <span className="bg-warning/20 text-warning text-xs font-bold px-2 py-1 rounded-full">{alerts.high}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-surfaceHover border border-border">
                 <div className="flex items-center">
                   <div className="w-2 h-2 rounded-full bg-blue-500 mr-3"></div>
                   <span className="text-sm font-medium">Medium</span>
                 </div>
-                <span className="bg-blue-500/20 text-blue-500 text-xs font-bold px-2 py-1 rounded-full">10</span>
+                <span className="bg-blue-500/20 text-blue-500 text-xs font-bold px-2 py-1 rounded-full">{alerts.medium}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-surfaceHover border border-border">
                 <div className="flex items-center">
                   <div className="w-2 h-2 rounded-full bg-textSecondary mr-3"></div>
                   <span className="text-sm font-medium">Low</span>
                 </div>
-                <span className="bg-surface border border-border text-textSecondary text-xs font-bold px-2 py-1 rounded-full">18</span>
+                <span className="bg-surface border border-border text-textSecondary text-xs font-bold px-2 py-1 rounded-full">{alerts.low}</span>
               </div>
             </div>
           </div>
@@ -160,12 +242,12 @@ export default function DashboardOverview() {
               <h2 className="text-sm font-bold text-primary uppercase tracking-wider">AI Insight</h2>
             </div>
             <p className="text-textPrimary font-medium text-sm leading-relaxed mb-3">
-              Database Server Memory Usage Increasing.
+              {recommendation.title}
             </p>
             <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
               <p className="text-xs text-textSecondary">
                 <strong className="text-primary block mb-1">Recommendation:</strong>
-                Increase RAM or optimize cache settings to prevent upcoming bottlenecks.
+                {recommendation.description}
               </p>
             </div>
             <button className="mt-4 w-full flex items-center justify-center text-xs font-medium text-primary hover:text-primary/80 transition-colors">
@@ -192,36 +274,23 @@ export default function DashboardOverview() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              <tr className="hover:bg-surfaceHover/50 transition-colors">
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger/10 text-danger border border-danger/20">
-                    <AlertCircle className="w-3 h-3 mr-1" /> Critical
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-textPrimary font-medium">Server 02 CPU High</td>
-                <td className="px-4 py-3 text-textSecondary">Application Server</td>
-                <td className="px-4 py-3 text-textSecondary">2 mins ago</td>
-              </tr>
-              <tr className="hover:bg-surfaceHover/50 transition-colors">
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger/10 text-danger border border-danger/20">
-                    <AlertCircle className="w-3 h-3 mr-1" /> Critical
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-textPrimary font-medium">Database Connection Timeout</td>
-                <td className="px-4 py-3 text-textSecondary">CompanyERP DB</td>
-                <td className="px-4 py-3 text-textSecondary">15 mins ago</td>
-              </tr>
-              <tr className="hover:bg-surfaceHover/50 transition-colors">
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning border border-warning/20">
-                    <AlertTriangle className="w-3 h-3 mr-1" /> High
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-textPrimary font-medium">Firewall Login Attempts</td>
-                <td className="px-4 py-3 text-textSecondary">Gateway 01</td>
-                <td className="px-4 py-3 text-textSecondary">1 hour ago</td>
-              </tr>
+              {notifications.map((note: any) => (
+                <tr key={note.id} className="hover:bg-surfaceHover/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                      note.severity === 'Critical' 
+                        ? 'bg-danger/10 text-danger border-danger/20' 
+                        : 'bg-warning/10 text-warning border-warning/20'
+                    }`}>
+                      {note.severity === 'Critical' ? <AlertCircle className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                      {note.severity}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-textPrimary font-medium">{note.event}</td>
+                  <td className="px-4 py-3 text-textSecondary">{note.source}</td>
+                  <td className="px-4 py-3 text-textSecondary">{note.time}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

@@ -14,7 +14,7 @@ const Dashboard: React.FC = () => {
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-logo">
           <div className="dot"></div>
-          {!isCollapsed && <span>ERAOP System</span>}
+          {!isCollapsed && <span>Redhelp System</span>}
         </div>
         
         <button 

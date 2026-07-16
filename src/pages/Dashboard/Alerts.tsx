@@ -7,7 +7,7 @@ const initialAlerts = [
   { id: 3, type: 'warning', message: 'Database connection pool near capacity (85%)', source: 'Database Monitoring', time: '1 hour ago', status: 'Open' },
   { id: 4, type: 'warning', message: 'High memory usage on Worker Node B', source: 'Server Monitoring', time: '2 hours ago', status: 'Resolved' },
   { id: 5, type: 'info', message: 'Automated backup completed successfully', source: 'System', time: '5 hours ago', status: 'Resolved' },
-  { id: 6, type: 'info', message: 'New ERAOP agent version available (v2.4)', source: 'System', time: '1 day ago', status: 'Open' },
+  { id: 6, type: 'info', message: 'New Redhelp agent version available (v2.4)', source: 'System', time: '1 day ago', status: 'Open' },
 ];
 
 export default function Alerts() {
