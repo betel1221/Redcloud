@@ -57,12 +57,14 @@ export default function Login() {
             <Activity className="w-10 h-10 text-[#EF4444]" />
           </Link>
         </div>
-        <h2 className="text-center text-3xl font-bold text-black tracking-tight">
-          Sign in to Redhelp
-        </h2>
-        <p className="mt-2 text-center text-sm text-[#4B5563]">
-          Welcome back to the Operations Platform
-        </p>
+        <div className="mb-8 text-center relative z-10">
+          <h1 className="text-3xl font-extrabold text-black tracking-tight mb-2">
+            Log in to Redhelp
+          </h1>
+          <p className="mt-2 text-center text-sm text-[#4B5563]">
+            Welcome back to the Operations Platform
+          </p>
+        </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
@@ -153,9 +155,9 @@ export default function Login() {
                 className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-[#EF4444] hover:bg-[#DC2626] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EF4444] focus:ring-offset-[#FFFFFF] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-white" />
+                  <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Authenticating...</>
                 ) : (
-                  'Sign In'
+                  'Log In'
                 )}
               </button>
             </div>

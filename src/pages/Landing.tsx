@@ -16,15 +16,9 @@ export default function Landing() {
         <div className="flex items-center space-x-4">
           <button 
             onClick={() => navigate('/login')}
-            className="px-6 py-2 border border-[#FECACA] rounded-md hover:bg-[#EF4444]/5 transition-all duration-300 font-medium text-sm text-black"
-          >
-            Sign In
-          </button>
-          <button 
-            onClick={() => navigate('/signup')}
             className="px-6 py-2 bg-[#EF4444] text-white rounded-md hover:bg-[#DC2626] transition-all duration-300 font-medium text-sm shadow-sm"
           >
-            Sign Up
+            Log In
           </button>
         </div>
       </nav>
