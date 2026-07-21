@@ -18,9 +18,11 @@ export default function AuditLog() {
   const [auditLogs, setAuditLogs] = useState(mockAuditLogs);
   
   // Create Admin state
-  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [createdPassword, setCreatedPassword] = useState('');
+  const [createdCredentials, setCreatedCredentials] = useState<{email: string, password: string} | null>(null);
   
   // Password management state
   const [selectedUser, setSelectedUser] = useState('');
@@ -60,21 +62,23 @@ export default function AuditLog() {
 
   const handleCreateAdmin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAdminEmail) return;
+    if (!firstName || !lastName || !employeeId) return;
 
     setIsCreating(true);
+    // Generate email
+    const generatedEmail = `${firstName.toLowerCase().replace(/\s+/g, '')}.${lastName.toLowerCase().replace(/\s+/g, '')}@redcloud.com`;
     // Generate random 10 character password
     const randomPass = Math.random().toString(36).slice(-10);
     
     setTimeout(() => {
-      addUser(newAdminEmail, 'admin', randomPass);
-      setCreatedPassword(randomPass);
+      addUser(generatedEmail, 'admin', randomPass);
+      setCreatedCredentials({ email: generatedEmail, password: randomPass });
       setIsCreating(false);
       
       const newLog = {
         id: Date.now(),
         action: 'Admin Account Created',
-        user: newAdminEmail,
+        user: generatedEmail,
         time: 'Just now',
         status: 'Success',
         ip: '127.0.0.1',
@@ -82,7 +86,9 @@ export default function AuditLog() {
       };
       setAuditLogs(prev => [newLog, ...prev]);
 
-      setNewAdminEmail('');
+      setFirstName('');
+      setLastName('');
+      setEmployeeId('');
     }, 1000);
   };
 
@@ -175,13 +181,38 @@ export default function AuditLog() {
             </p>
 
             <form onSubmit={handleCreateAdmin} className="space-y-4 relative z-10">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-textPrimary">First Name</label>
+                  <input 
+                    type="text" 
+                    value={firstName}
+                    onChange={(e) => { setFirstName(e.target.value); setCreatedCredentials(null); }}
+                    placeholder="e.g. Jane"
+                    className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" 
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-textPrimary">Last Name</label>
+                  <input 
+                    type="text" 
+                    value={lastName}
+                    onChange={(e) => { setLastName(e.target.value); setCreatedCredentials(null); }}
+                    placeholder="e.g. Doe"
+                    className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" 
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1">
-                <label className="text-sm font-medium text-textPrimary">Email Address</label>
+                <label className="text-sm font-medium text-textPrimary">Employee ID</label>
                 <input 
-                  type="email" 
-                  value={newAdminEmail}
-                  onChange={(e) => { setNewAdminEmail(e.target.value); setCreatedPassword(''); }}
-                  placeholder="newadmin@company.com"
+                  type="text" 
+                  value={employeeId}
+                  onChange={(e) => { setEmployeeId(e.target.value); setCreatedCredentials(null); }}
+                  placeholder="e.g. EMP-1042"
                   className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" 
                   required
                 />
@@ -189,23 +220,35 @@ export default function AuditLog() {
 
               <button 
                 type="submit"
-                disabled={!newAdminEmail || isCreating}
+                disabled={!firstName || !lastName || !employeeId || isCreating}
                 className="w-full flex justify-center items-center py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
-                {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account & Generate Password'}
+                {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account & Generate Credentials'}
               </button>
 
-              {createdPassword && (
+              {createdCredentials && (
                 <div className="mt-4 p-4 bg-surfaceHover border border-primary/30 rounded-lg">
-                  <p className="text-sm font-medium text-textSecondary mb-2 flex items-center">
-                    <CheckCircle className="w-4 h-4 text-success mr-2" /> Account Created
+                  <p className="text-sm font-medium text-textSecondary mb-4 flex items-center">
+                    <CheckCircle className="w-4 h-4 text-success mr-2" /> Account Successfully Generated
                   </p>
-                  <p className="text-xs text-textSecondary mb-1">Temporary Password:</p>
-                  <div className="flex items-center justify-between bg-background border border-border rounded p-2">
-                    <code className="text-primary font-mono text-lg">{createdPassword}</code>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-textSecondary mb-1">Generated Email:</p>
+                      <div className="flex items-center justify-between bg-background border border-border rounded p-2">
+                        <code className="text-primary font-mono text-sm">{createdCredentials.email}</code>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-textSecondary mb-1">Temporary Password:</p>
+                      <div className="flex items-center justify-between bg-background border border-border rounded p-2">
+                        <code className="text-primary font-mono text-sm">{createdCredentials.password}</code>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-warning mt-2 italic">
-                    Please provide this password to the new admin securely. They will be forced to change it upon first login.
+                  
+                  <p className="text-xs text-warning mt-3 italic">
+                    Please provide these credentials to the new admin securely. They will be forced to change the password upon first login.
                   </p>
                 </div>
               )}
