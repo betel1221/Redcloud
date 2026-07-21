@@ -301,7 +301,9 @@ export default function AuditLog() {
                   <p className="text-sm font-medium text-textSecondary mb-4 flex items-center">
                     <CheckCircle className="w-4 h-4 text-success mr-2" /> Account Successfully Generated
                   </p>
-                  <p className="text-xs text-textSecondary mb-1">Generated Email:</p>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-textSecondary mb-1">Generated Email:</p>
                       <div className="flex items-center justify-between bg-background border border-border rounded p-2">
                         <code className="text-primary font-mono text-sm">{createdCredentials.email}</code>
                       </div>
