@@ -15,6 +15,7 @@ export default function AuditLog() {
   const { role, users, addUser, updateUserPassword } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState('All');
+  const [auditLogs, setAuditLogs] = useState(mockAuditLogs);
   
   // Create Admin state
   const [newAdminEmail, setNewAdminEmail] = useState('');
@@ -40,6 +41,18 @@ export default function AuditLog() {
       updateUserPassword(selectedUser, newPassword);
       setIsUpdating(false);
       setUpdateSuccess(true);
+      
+      const newLog = {
+        id: Date.now(),
+        action: 'Password Forced Reset',
+        user: selectedUser,
+        time: 'Just now',
+        status: 'Success',
+        ip: '127.0.0.1',
+        browser: 'Current Session'
+      };
+      setAuditLogs(prev => [newLog, ...prev]);
+
       setNewPassword('');
       setTimeout(() => setUpdateSuccess(false), 3000);
     }, 1500);
@@ -57,11 +70,23 @@ export default function AuditLog() {
       addUser(newAdminEmail, 'admin', randomPass);
       setCreatedPassword(randomPass);
       setIsCreating(false);
+      
+      const newLog = {
+        id: Date.now(),
+        action: 'Admin Account Created',
+        user: newAdminEmail,
+        time: 'Just now',
+        status: 'Success',
+        ip: '127.0.0.1',
+        browser: 'Current Session'
+      };
+      setAuditLogs(prev => [newLog, ...prev]);
+
       setNewAdminEmail('');
     }, 1000);
   };
 
-  const filteredLogs = mockAuditLogs.filter(log => {
+  const filteredLogs = auditLogs.filter(log => {
     const matchesSearch = log.action.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           log.ip.includes(searchTerm);
@@ -69,7 +94,7 @@ export default function AuditLog() {
     return matchesSearch && matchesAction;
   });
 
-  const uniqueActions = ['All', ...Array.from(new Set(mockAuditLogs.map(l => l.action)))];
+  const uniqueActions = ['All', ...Array.from(new Set(auditLogs.map(l => l.action)))];
 
   return (
     <div className="space-y-6 animate-fade-in">
