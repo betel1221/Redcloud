@@ -16,6 +16,9 @@ export default function AuditLog() {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState('All');
   const [auditLogs, setAuditLogs] = useState(mockAuditLogs);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [approvedCredentials, setApprovedCredentials] = useState(null);
+  const [requireApproval, setRequireApproval] = useState(true);
   
   // Create Admin state
   const [firstName, setFirstName] = useState('');
@@ -63,33 +66,88 @@ export default function AuditLog() {
   const handleCreateAdmin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName || !lastName || !employeeId) return;
-
     setIsCreating(true);
-    // Generate email
     const generatedEmail = `${firstName.toLowerCase().replace(/\s+/g, '')}.${lastName.toLowerCase().replace(/\s+/g, '')}@redcloud.com`;
-    // Generate random 10 character password
     const randomPass = Math.random().toString(36).slice(-10);
-    
-    setTimeout(() => {
-      addUser(generatedEmail, 'admin', randomPass);
-      setCreatedCredentials({ email: generatedEmail, password: randomPass });
-      setIsCreating(false);
-      
-      const newLog = {
+    // Store pending request or directly create based on approval requirement
+    const request = {
+      id: Date.now(),
+      firstName,
+      lastName,
+      employeeId,
+      email: generatedEmail,
+      password: randomPass
+    };
+    if (requireApproval) {
+      // Log the creation request as pending
+      const log = {
         id: Date.now(),
-        action: 'Admin Account Created',
+        action: 'Admin Account Creation Requested',
+        user: generatedEmail,
+        time: 'Just now',
+        status: 'Pending',
+        ip: '127.0.0.1',
+        browser: 'Current Session'
+      };
+      setAuditLogs(prev => [log, ...prev]);
+      setPendingRequests(prev => [request, ...prev]);
+      setCreatedCredentials({ email: generatedEmail, password: randomPass });
+    } else {
+      addUser(generatedEmail, 'admin', randomPass);
+      const log = {
+        id: Date.now(),
+        action: 'Admin Account Created (Auto-Approved)',
         user: generatedEmail,
         time: 'Just now',
         status: 'Success',
         ip: '127.0.0.1',
         browser: 'Current Session'
       };
-      setAuditLogs(prev => [newLog, ...prev]);
+      setAuditLogs(prev => [log, ...prev]);
+      setCreatedCredentials({ email: generatedEmail, password: randomPass });
+    }
+    setIsCreating(false);
+    // Reset form fields
+    setFirstName('');
+    setLastName('');
+    setEmployeeId('');
+  };
 
-      setFirstName('');
-      setLastName('');
-      setEmployeeId('');
-    }, 1000);
+  // Approve pending admin request
+  const handleApprove = (reqId) => {
+    const req = pendingRequests.find(r => r.id === reqId);
+    if (!req) return;
+    addUser(req.email, 'admin', req.password);
+    // Log approval
+    const log = {
+      id: Date.now(),
+      action: 'Admin Account Approved',
+      user: req.email,
+      time: 'Just now',
+      status: 'Success',
+      ip: '127.0.0.1',
+      browser: 'Current Session'
+    };
+    setAuditLogs(prev => [log, ...prev]);
+    // Remove from pending
+    setPendingRequests(prev => prev.filter(r => r.id !== reqId));
+  };
+
+  // Reject pending admin request
+  const handleReject = (reqId) => {
+    const req = pendingRequests.find(r => r.id === reqId);
+    if (!req) return;
+    const log = {
+      id: Date.now(),
+      action: 'Admin Account Rejected',
+      user: req.email,
+      time: 'Just now',
+      status: 'Failed',
+      ip: '127.0.0.1',
+      browser: 'Current Session'
+    };
+    setAuditLogs(prev => [log, ...prev]);
+    setPendingRequests(prev => prev.filter(r => r.id !== reqId));
   };
 
   const filteredLogs = auditLogs.filter(log => {
@@ -218,6 +276,18 @@ export default function AuditLog() {
                 />
               </div>
 
+              <div className="flex items-center mt-2 p-3 bg-surfaceHover border border-border rounded-lg">
+                <label className="flex items-center space-x-2 text-sm font-medium text-textPrimary cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={requireApproval}
+                    onChange={e => setRequireApproval(e.target.checked)}
+                    className="form-checkbox h-4 w-4 text-primary border-border rounded"
+                  />
+                  <span>Require Superadmin Approval</span>
+                </label>
+              </div>
+
               <button 
                 type="submit"
                 disabled={!firstName || !lastName || !employeeId || isCreating}
@@ -231,10 +301,7 @@ export default function AuditLog() {
                   <p className="text-sm font-medium text-textSecondary mb-4 flex items-center">
                     <CheckCircle className="w-4 h-4 text-success mr-2" /> Account Successfully Generated
                   </p>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-textSecondary mb-1">Generated Email:</p>
+                  <p className="text-xs text-textSecondary mb-1">Generated Email:</p>
                       <div className="flex items-center justify-between bg-background border border-border rounded p-2">
                         <code className="text-primary font-mono text-sm">{createdCredentials.email}</code>
                       </div>
@@ -258,6 +325,40 @@ export default function AuditLog() {
 
         {/* System Audit Logs */}
         <div className="lg:col-span-2">
+            {/* Pending Admin Approvals (Superadmin only) */}
+            {role === 'superadmin' && pendingRequests.length > 0 && (
+              <div className="glass-panel p-6 mb-6">
+                <h2 className="text-lg font-bold text-textPrimary mb-4 flex items-center">
+                  <UserCog className="w-4 h-4 mr-2" /> Pending Admin Approvals
+                </h2>
+                <ul className="space-y-3">
+                  {pendingRequests.map(req => (
+                      <li key={req.id} className="flex items-center justify-between bg-surfaceHover p-3 rounded">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                            {req.firstName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-textPrimary">{req.firstName} {req.lastName} ({req.email})</p>
+                            <p className="text-xs text-textSecondary">Employee ID: {req.employeeId}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApprove(req.id)}
+                            className="px-3 py-1 bg-primary text-white rounded hover:bg-primary/90 transition"
+                          >Approve</button>
+                          <button
+                            onClick={() => handleReject(req.id)}
+                            className="px-3 py-1 bg-danger text-white rounded hover:bg-danger/90 transition"
+                          >Reject</button>
+                        </div>
+                      </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
           <div className="glass-panel p-6 h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
               <h2 className="text-lg font-bold text-textPrimary flex items-center">
@@ -314,7 +415,7 @@ export default function AuditLog() {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                            log.status === 'Success' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
+                            log.status === 'Success' ? 'bg-success/10 text-success' : log.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-danger/10 text-danger'
                           }`}>
                             {log.status}
                           </span>
