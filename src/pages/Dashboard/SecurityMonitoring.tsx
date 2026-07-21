@@ -1,7 +1,6 @@
-import React from 'react';
-import { ShieldAlert, UserX, UserCheck, Shield, Lock, AlertOctagon, TrendingUp, Search } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-
+import React, { useMemo } from 'react';
+import { ShieldAlert, UserX, UserCheck, Shield, Lock, AlertOctagon, TrendingUp, Search, CheckCircle } from 'lucide-react';
+import PerformanceChart from '../../components/ui/PerformanceChart';
 
 const securityEvents = [
   { time: '10:00', failed: 12, blocked: 4 },
@@ -13,6 +12,11 @@ const securityEvents = [
 ];
 
 export default function SecurityMonitoring() {
+  const threatLevel = useMemo(() => {
+    const totalBlocked = securityEvents.reduce((acc, curr) => acc + curr.blocked, 0);
+    return totalBlocked > 50 ? 'ELEVATED' : 'NORMAL';
+  }, []);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center mb-2">
@@ -23,10 +27,18 @@ export default function SecurityMonitoring() {
           </h1>
           <p className="text-textSecondary mt-1">Real-time threat detection and access logs.</p>
         </div>
-        <div className="bg-danger/20 border border-danger/50 text-danger px-4 py-2 rounded-lg font-bold flex items-center shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-          <AlertOctagon className="w-5 h-5 mr-2 animate-pulse" />
-          Threat Level: ELEVATED
-        </div>
+        
+        {threatLevel === 'ELEVATED' ? (
+          <div className="bg-danger/20 border border-danger/50 text-danger px-4 py-2 rounded-lg font-bold flex items-center shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+            <AlertOctagon className="w-5 h-5 mr-2 animate-pulse" />
+            Threat Level: ELEVATED
+          </div>
+        ) : (
+          <div className="bg-success/20 border border-success/50 text-success px-4 py-2 rounded-lg font-bold flex items-center">
+            <CheckCircle className="w-5 h-5 mr-2" />
+            Threat Level: NORMAL
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -69,33 +81,8 @@ export default function SecurityMonitoring() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass-panel p-6">
-          <h2 className="text-lg font-bold text-textPrimary mb-6">Authentication Activity</h2>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={securityEvents} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorFailed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FBBF24" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#FBBF24" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorBlocked" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F87171" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#F87171" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2E3B52" vertical={false} />
-                <XAxis dataKey="time" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1A2235', borderColor: '#2E3B52', borderRadius: '8px' }}
-                  itemStyle={{ color: '#F8FAFC' }}
-                />
-                <Area type="monotone" dataKey="failed" stroke="#FBBF24" strokeWidth={2} fillOpacity={1} fill="url(#colorFailed)" name="Failed Logins" />
-                <Area type="monotone" dataKey="blocked" stroke="#F87171" strokeWidth={2} fillOpacity={1} fill="url(#colorBlocked)" name="Blocked Requests" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="lg:col-span-2">
+          <PerformanceChart title="Authentication Activity & Performance" />
         </div>
 
         <div className="space-y-6 h-full flex flex-col">

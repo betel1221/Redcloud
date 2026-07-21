@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Activity, Lock, Mail, Loader2, ArrowLeft } from 'lucide-react';
+import { Activity, Lock, Mail, Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   
@@ -107,13 +108,20 @@ export default function Login() {
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors({...errors, password: ''}); }}
-                  className={`block w-full pl-10 bg-[#FFFFFF] border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#FECACA] focus:ring-white'} rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 pr-10 bg-[#FFFFFF] border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#FECACA] focus:ring-white'} rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#4B5563] hover:text-black transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
               {errors.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.password}</p>}
             </div>
@@ -132,9 +140,9 @@ export default function Login() {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-black hover:underline transition-colors">
+                <Link to="/forgot-password" className="font-medium text-black hover:underline transition-colors">
                   Forgot your password?
-                </a>
+                </Link>
               </div>
             </div>
 

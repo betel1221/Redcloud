@@ -1,7 +1,6 @@
-import React from 'react';
-import { Database, Activity, HardDrive, Zap, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
+import React, { useState } from 'react';
+import { Database, Activity, HardDrive, Zap, Clock, ShieldCheck, AlertTriangle, Loader2, CheckCircle } from 'lucide-react';
+import PerformanceChart from '../../components/ui/PerformanceChart';
 
 const mockDbData = [
   { name: 'CompanyERP', status: 'Healthy', tables: 128, connections: 35, storage: '152 GB', slowQueries: 3, risk: 'Low' },
@@ -19,6 +18,18 @@ const mockQueryPerformance = [
 ];
 
 export default function DatabaseMonitoring() {
+  const [analyzingDb, setAnalyzingDb] = useState<string | null>(null);
+  const [analyzed, setAnalyzed] = useState<string | null>(null);
+
+  const handleAnalyze = (dbName: string) => {
+    setAnalyzingDb(dbName);
+    setTimeout(() => {
+      setAnalyzingDb(null);
+      setAnalyzed(dbName);
+      setTimeout(() => setAnalyzed(null), 3000);
+    }, 1500);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center mb-2">
@@ -30,6 +41,13 @@ export default function DatabaseMonitoring() {
           <p className="text-textSecondary mt-1">Manage and monitor enterprise database instances.</p>
         </div>
       </div>
+
+      {analyzed && (
+        <div className="fixed bottom-6 right-6 bg-success text-white px-4 py-3 rounded-lg shadow-lg flex items-center animate-slide-up z-50">
+          <CheckCircle className="w-5 h-5 mr-3" />
+          <span className="font-medium">Analysis complete for {analyzed}. No anomalies found.</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="glass-card flex flex-col items-center justify-center py-6 text-center">
@@ -56,8 +74,12 @@ export default function DatabaseMonitoring() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass-panel p-6">
-          <h2 className="text-lg font-bold text-textPrimary mb-6">Database Instances</h2>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="h-80">
+            <PerformanceChart title="Database Performance" />
+          </div>
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-bold text-textPrimary mb-6">Database Instances</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-textSecondary uppercase bg-surfaceHover border-b border-border">
@@ -94,13 +116,22 @@ export default function DatabaseMonitoring() {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <button className="text-primary hover:underline text-xs font-medium">Analyze</button>
+                      <button 
+                        onClick={() => handleAnalyze(db.name)}
+                        disabled={analyzingDb === db.name}
+                        className="text-primary hover:underline text-xs font-medium flex items-center"
+                      >
+                        {analyzingDb === db.name ? (
+                          <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Analyzing</>
+                        ) : 'Analyze'}
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        </div>
         </div>
 
         <div className="space-y-6 h-full flex flex-col">

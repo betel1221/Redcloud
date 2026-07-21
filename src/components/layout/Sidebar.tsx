@@ -9,9 +9,11 @@ import {
   Settings,
   User,
   Activity,
-  Bot
+  Bot,
+  Shield
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -32,6 +34,13 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isCollapsed }: SidebarProps) {
+  const { role } = useAuth();
+  
+  const currentBottomItems = [...bottomItems];
+  if (role === 'superadmin') {
+    currentBottomItems.unshift({ name: 'Audit & Users', path: '/dashboard/audit', icon: Shield });
+  }
+
   return (
     <div className={cn(
       "bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-20 transition-all duration-300",
@@ -74,7 +83,7 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
       </div>
 
       <div className="p-4 border-t border-border space-y-1">
-        {bottomItems.map((item) => (
+        {currentBottomItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Shield, Bell, Key, Save, CheckCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Save, CheckCircle, KeyRound, UserCheck } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Settings() {
+  const { role, passwordRequests, approvePasswordRequest } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
   const [isSaved, setIsSaved] = useState(false);
 
@@ -18,7 +20,7 @@ export default function Settings() {
             <SettingsIcon className="w-6 h-6 mr-3 text-primary" />
             System Settings
           </h1>
-          <p className="text-textSecondary mt-1">Configure global Redhelp preferences (Admin Only).</p>
+          <p className="text-textSecondary mt-1">Configure global Redhelp preferences.</p>
         </div>
         <button 
           onClick={handleSave}
@@ -49,22 +51,21 @@ export default function Settings() {
             >
               <Shield className="w-4 h-4 mr-3" /> Security & Access
             </button>
-            <button 
-              onClick={() => setActiveTab('notifications')}
-              className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'notifications' ? 'bg-primary/10 text-primary' : 'text-textSecondary hover:bg-surfaceHover hover:text-textPrimary'
-              }`}
-            >
-              <Bell className="w-4 h-4 mr-3" /> Alert Webhooks
-            </button>
-            <button 
-              onClick={() => setActiveTab('api')}
-              className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'api' ? 'bg-primary/10 text-primary' : 'text-textSecondary hover:bg-surfaceHover hover:text-textPrimary'
-              }`}
-            >
-              <Key className="w-4 h-4 mr-3" /> Global API Keys
-            </button>
+            {role === 'superadmin' && (
+              <button 
+                onClick={() => setActiveTab('requests')}
+                className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'requests' ? 'bg-primary/10 text-primary' : 'text-textSecondary hover:bg-surfaceHover hover:text-textPrimary'
+                }`}
+              >
+                <KeyRound className="w-4 h-4 mr-3" /> Access Requests
+                {passwordRequests.length > 0 && (
+                  <span className="ml-auto bg-danger text-white text-xs px-2 py-0.5 rounded-full">
+                    {passwordRequests.length}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -123,43 +124,36 @@ export default function Settings() {
               </div>
             )}
 
-            {activeTab === 'notifications' && (
+            {activeTab === 'requests' && role === 'superadmin' && (
               <div className="space-y-6 animate-fade-in">
-                <h2 className="text-lg font-bold text-textPrimary mb-4">Alert Webhooks</h2>
-                <p className="text-sm text-textSecondary mb-6">Configure where critical system alerts should be forwarded.</p>
+                <h2 className="text-lg font-bold text-textPrimary mb-4">Password Reset Requests</h2>
+                <p className="text-sm text-textSecondary mb-6">Review and approve access requests from Administrators.</p>
                 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-textPrimary">Slack Webhook URL</label>
-                    <input type="url" placeholder="https://hooks.slack.com/services/..." className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" />
+                {passwordRequests.length === 0 ? (
+                  <div className="p-8 border border-dashed border-border rounded-xl text-center">
+                    <UserCheck className="w-8 h-8 text-textSecondary mx-auto mb-3" />
+                    <p className="text-textSecondary font-medium">No pending requests</p>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-textPrimary">PagerDuty Integration Key</label>
-                    <input type="password" placeholder="••••••••••••••••" className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" />
+                ) : (
+                  <div className="space-y-4">
+                    {passwordRequests.map((email, idx) => (
+                      <div key={idx} className="p-4 border border-border rounded-xl bg-surfaceHover flex justify-between items-center">
+                        <div>
+                          <h3 className="font-bold text-textPrimary mb-1">{email}</h3>
+                          <p className="text-xs text-textSecondary">Requested a password reset link.</p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => approvePasswordRequest(email)}
+                            className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+                          >
+                            Approve
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'api' && (
-              <div className="space-y-6 animate-fade-in">
-                <h2 className="text-lg font-bold text-textPrimary mb-4">Global API Keys</h2>
-                <p className="text-sm text-textSecondary mb-6">Manage API keys used by external services to ingest logs into Redhelp.</p>
-                
-                <div className="p-4 border border-border rounded-xl bg-surfaceHover/30 flex justify-between items-center">
-                  <div>
-                    <h3 className="font-bold text-textPrimary mb-1">Production Ingestion Key</h3>
-                    <p className="text-xs text-textSecondary">Created: Oct 12, 2025 • Never expires</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button className="px-3 py-1.5 text-xs font-medium border border-border rounded hover:bg-surface transition-colors">Regenerate</button>
-                    <button className="px-3 py-1.5 text-xs font-medium text-danger border border-danger/30 rounded hover:bg-danger/10 transition-colors">Revoke</button>
-                  </div>
-                </div>
-                
-                <button className="mt-4 px-4 py-2 bg-surface border border-dashed border-border rounded-lg text-sm font-medium text-textPrimary hover:border-primary hover:text-primary transition-all w-full flex items-center justify-center">
-                  + Generate New Key
-                </button>
+                )}
               </div>
             )}
 

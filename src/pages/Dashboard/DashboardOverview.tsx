@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, ChevronRight, Bot, Loader2 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, ChevronRight, Bot, Loader2, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import PerformanceChart, { mockPerformanceData } from '../../components/ui/PerformanceChart';
 
 // --- MOCK DATA ---
 // Backend developers: Replace these with real API calls
-const mockPerformanceData = [
-  { time: '09:00', cpu: 45, memory: 60 },
-  { time: '09:10', cpu: 55, memory: 65 },
-  { time: '09:20', cpu: 40, memory: 62 },
-  { time: '09:30', cpu: 75, memory: 70 },
-  { time: '09:40', cpu: 85, memory: 78 },
-  { time: '09:50', cpu: 92, memory: 82 },
-  { time: '10:00', cpu: 65, memory: 75 },
-];
 
 const mockHealthData = {
   dbHealth: 98,
@@ -62,8 +55,11 @@ const StatCard = ({ title, value, icon: Icon, colorClass, statusText }: any) => 
 );
 
 export default function DashboardOverview() {
+  const { profileComplete, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [reportGenerated, setReportGenerated] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   useEffect(() => {
     // Backend developers: Replace this setTimeout with your actual fetch calls
@@ -103,7 +99,63 @@ export default function DashboardOverview() {
   const { health, alerts, recommendation, notifications, performance } = data;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      
+      {!profileComplete && (
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-primary font-bold text-lg">Welcome to Redhelp!</h3>
+            <p className="text-textSecondary text-sm mt-1">
+              Please complete your profile setup (Name, Phone, Profile Picture) to get the most out of the platform.
+            </p>
+          </div>
+          <Link 
+            to="/dashboard/profile"
+            className="flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm shadow-sm shadow-primary/20"
+          >
+            Setup Profile <ArrowRight className="w-4 h-4 ml-2" />
+          </Link>
+        </div>
+      )}
+
+      {reportGenerated && (
+        <div className="fixed bottom-6 right-6 bg-success text-white px-4 py-3 rounded-lg shadow-lg flex items-center animate-slide-up z-50">
+          <CheckCircle className="w-5 h-5 mr-3" />
+          <span className="font-medium">Full system report generated and downloaded!</span>
+        </div>
+      )}
+
+      {showAnalysis && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-surface border border-border p-6 rounded-xl w-full max-w-md shadow-2xl relative">
+            <button 
+              onClick={() => setShowAnalysis(false)}
+              className="absolute top-4 right-4 text-textSecondary hover:text-textPrimary"
+            >
+              &times;
+            </button>
+            <div className="flex items-center mb-4">
+              <Bot className="w-6 h-6 text-primary mr-3" />
+              <h3 className="text-lg font-bold text-textPrimary">AI Insight Analysis</h3>
+            </div>
+            <p className="text-textSecondary text-sm mb-4 leading-relaxed">
+              Based on historical data patterns over the last 30 days, the database server memory usage peaks heavily during business hours (9AM-5PM). We project a critical threshold breach within 4 days if cache TTL is not optimized.
+            </p>
+            <p className="text-textPrimary text-sm font-medium">Recommended action:</p>
+            <ul className="list-disc list-inside text-sm text-textSecondary mt-2 space-y-1">
+              <li>Increase RAM allocation by 16GB</li>
+              <li>Tune Redis caching parameters</li>
+            </ul>
+            <button 
+              onClick={() => setShowAnalysis(false)}
+              className="mt-6 w-full py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              Close Analysis
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-textPrimary">Company Infrastructure Dashboard</h1>
@@ -152,7 +204,13 @@ export default function DashboardOverview() {
           colorClass={{ bg: 'bg-warning', text: 'text-warning', border: 'border-warning/30' }}
           statusText={health.securityStatus}
         />
-        <div className="glass-card flex flex-col justify-center items-center text-center group cursor-pointer">
+        <div 
+          className="glass-card flex flex-col justify-center items-center text-center group cursor-pointer hover:bg-surfaceHover/80 transition-colors"
+          onClick={() => {
+            setReportGenerated(true);
+            setTimeout(() => setReportGenerated(false), 3000);
+          }}
+        >
           <Activity className="w-8 h-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
           <h3 className="text-lg font-bold text-textPrimary">Generate Full Report</h3>
           <p className="text-xs text-textSecondary mt-1">Download PDF overview</p>
@@ -161,40 +219,8 @@ export default function DashboardOverview() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Chart Area */}
-        <div className="lg:col-span-2 glass-panel p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-textPrimary">System Performance</h2>
-            <select className="bg-background border border-border text-sm rounded-md px-3 py-1 focus:ring-primary focus:border-primary">
-              <option>Last 1 Hour</option>
-              <option>Last 24 Hours</option>
-              <option>Last 7 Days</option>
-            </select>
-          </div>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorMemory" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#A3A3A3" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#A3A3A3" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                <XAxis dataKey="time" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '8px' }}
-                  itemStyle={{ color: '#111111' }}
-                />
-                <Area type="monotone" dataKey="cpu" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#colorCpu)" name="CPU Usage %" />
-                <Area type="monotone" dataKey="memory" stroke="#A3A3A3" strokeWidth={2} fillOpacity={1} fill="url(#colorMemory)" name="Memory Usage %" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="lg:col-span-2">
+          <PerformanceChart data={performance} />
         </div>
 
         {/* Alerts & AI Recommendations Sidebar */}
@@ -250,49 +276,13 @@ export default function DashboardOverview() {
                 {recommendation.description}
               </p>
             </div>
-            <button className="mt-4 w-full flex items-center justify-center text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+            <button 
+              onClick={() => setShowAnalysis(true)}
+              className="mt-4 w-full flex items-center justify-center text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+            >
               View Analysis <ChevronRight className="w-4 h-4 ml-1" />
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Recent Notifications Table */}
-      <div className="glass-panel p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-bold text-textPrimary">Recent Notifications</h2>
-          <button className="text-sm text-primary hover:underline">View All</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-textSecondary uppercase bg-surfaceHover border-b border-border">
-              <tr>
-                <th className="px-4 py-3 rounded-tl-lg">Severity</th>
-                <th className="px-4 py-3">Event</th>
-                <th className="px-4 py-3">Source</th>
-                <th className="px-4 py-3 rounded-tr-lg">Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {notifications.map((note: any) => (
-                <tr key={note.id} className="hover:bg-surfaceHover/50 transition-colors">
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-                      note.severity === 'Critical' 
-                        ? 'bg-danger/10 text-danger border-danger/20' 
-                        : 'bg-warning/10 text-warning border-warning/20'
-                    }`}>
-                      {note.severity === 'Critical' ? <AlertCircle className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
-                      {note.severity}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-textPrimary font-medium">{note.event}</td>
-                  <td className="px-4 py-3 text-textSecondary">{note.source}</td>
-                  <td className="px-4 py-3 text-textSecondary">{note.time}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

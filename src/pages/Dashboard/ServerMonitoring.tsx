@@ -1,6 +1,6 @@
-import React from 'react';
-import { Server, Cpu, HardDrive, Network, Activity, ArrowUpRight, ArrowDownRight, Info } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+import React, { useState } from 'react';
+import { Server, Cpu, HardDrive, Network, Activity, ArrowUpRight, ArrowDownRight, Info, CheckCircle } from 'lucide-react';
+import PerformanceChart from '../../components/ui/PerformanceChart';
 
 
 const mockServerData = [
@@ -15,8 +15,22 @@ const cpuTrend = [
 ];
 
 export default function ServerMonitoring() {
+  const [showUpdate, setShowUpdate] = useState<string | null>(null);
+
+  const handleUpdateClick = (updateText: string) => {
+    setShowUpdate(updateText);
+    setTimeout(() => setShowUpdate(null), 3000);
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      {showUpdate && (
+        <div className="fixed bottom-6 right-6 bg-success text-white px-4 py-3 rounded-lg shadow-lg flex items-center animate-slide-up z-50">
+          <CheckCircle className="w-5 h-5 mr-3" />
+          <span className="font-medium">{showUpdate}</span>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-2">
         <div>
           <h1 className="text-2xl font-bold text-textPrimary flex items-center">
@@ -29,6 +43,10 @@ export default function ServerMonitoring() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 space-y-6">
+          <div className="h-80">
+            <PerformanceChart title="Server Resource Usage" />
+          </div>
+          
           <div className="glass-panel p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-textPrimary">Server Instances</h2>
@@ -89,14 +107,20 @@ export default function ServerMonitoring() {
               <h2 className="text-sm font-bold text-textPrimary uppercase tracking-wider">Updates & Alerts</h2>
             </div>
             <div className="space-y-3">
-              <div className="p-3 border border-border rounded-lg bg-surfaceHover/50">
+              <div 
+                className="p-3 border border-border rounded-lg bg-surfaceHover/50 cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => handleUpdateClick('CPU Spike acknowledged and recorded.')}
+              >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-danger">CPU Spike</span>
                   <span className="text-[10px] text-textSecondary">Now</span>
                 </div>
                 <p className="text-xs text-textSecondary">App Server 01 CPU at 92%.</p>
               </div>
-              <div className="p-3 border border-border rounded-lg bg-surfaceHover/50">
+              <div 
+                className="p-3 border border-border rounded-lg bg-surfaceHover/50 cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => handleUpdateClick('Node Restart status tracked.')}
+              >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-warning">Node Restarting</span>
                   <span className="text-[10px] text-textSecondary">10m ago</span>

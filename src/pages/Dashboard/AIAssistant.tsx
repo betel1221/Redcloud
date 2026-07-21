@@ -89,14 +89,6 @@ export default function AIAssistant() {
             </p>
           </div>
         </div>
-        <div className="flex space-x-2 text-textSecondary">
-          <button className="p-2 hover:bg-surfaceHover rounded-lg transition-colors">
-            <RefreshCw className="w-5 h-5" />
-          </button>
-          <button className="p-2 hover:bg-surfaceHover rounded-lg transition-colors">
-            <MoreVertical className="w-5 h-5" />
-          </button>
-        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">

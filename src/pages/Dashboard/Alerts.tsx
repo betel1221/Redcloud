@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Search, Filter, AlertTriangle, AlertCircle, CheckCircle, ChevronDown } from 'lucide-react';
+import { Bell, Search, Filter, AlertTriangle, AlertCircle, CheckCircle, ChevronDown, X, Info, Clock, Server, FileText } from 'lucide-react';
 
 const initialAlerts = [
   { id: 1, type: 'critical', message: 'CPU utilization on App Server 01 exceeded 90%', source: 'Server Monitoring', time: '10 mins ago', status: 'Open' },
@@ -13,6 +13,7 @@ const initialAlerts = [
 export default function Alerts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const [selectedAlert, setSelectedAlert] = useState<any>(null);
 
   const filteredAlerts = initialAlerts.filter(alert => {
     const matchesSearch = alert.message.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -64,10 +65,6 @@ export default function Alerts() {
                 <ChevronDown className="h-4 w-4" />
               </div>
             </div>
-            <button className="flex items-center justify-center bg-surface border border-border text-textPrimary px-4 py-2.5 rounded-lg hover:bg-surfaceHover transition-colors">
-              <Filter className="w-4 h-4 mr-2" />
-              More Filters
-            </button>
           </div>
         </div>
 
@@ -112,7 +109,12 @@ export default function Alerts() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-primary hover:underline font-medium text-xs">View Details</button>
+                      <button 
+                        onClick={() => setSelectedAlert(alert)}
+                        className="text-primary hover:underline font-medium text-xs"
+                      >
+                        View Details
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -127,6 +129,82 @@ export default function Alerts() {
           </table>
         </div>
       </div>
+
+      {selectedAlert && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-surface border border-border p-6 rounded-xl w-full max-w-lg shadow-2xl relative">
+            <button 
+              onClick={() => setSelectedAlert(null)}
+              className="absolute top-4 right-4 text-textSecondary hover:text-textPrimary"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-center mb-6">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full mr-4 ${
+                selectedAlert.type === 'critical' ? 'bg-danger/20 text-danger' :
+                selectedAlert.type === 'warning' ? 'bg-warning/20 text-warning' :
+                'bg-success/20 text-success'
+              }`}>
+                {selectedAlert.type === 'critical' ? <AlertCircle className="w-6 h-6" /> : 
+                 selectedAlert.type === 'warning' ? <AlertTriangle className="w-6 h-6" /> : 
+                 <CheckCircle className="w-6 h-6" />}
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-textPrimary">Incident Details</h3>
+                <p className="text-sm font-medium capitalize text-textSecondary">{selectedAlert.type} Alert</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-background rounded-lg p-4 border border-border">
+                <div className="flex items-start mb-3">
+                  <Info className="w-5 h-5 text-textSecondary mr-3 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-textSecondary uppercase font-bold mb-1">Message</p>
+                    <p className="text-sm text-textPrimary font-medium">{selectedAlert.message}</p>
+                  </div>
+                </div>
+                <div className="flex items-start mb-3">
+                  <Server className="w-5 h-5 text-textSecondary mr-3 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-textSecondary uppercase font-bold mb-1">Source Component</p>
+                    <p className="text-sm text-textPrimary font-medium">{selectedAlert.source}</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <Clock className="w-5 h-5 text-textSecondary mr-3 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-textSecondary uppercase font-bold mb-1">Timestamp</p>
+                    <p className="text-sm text-textPrimary font-medium">{selectedAlert.time}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t border-border flex justify-between items-center">
+                <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
+                  selectedAlert.status === 'Open' ? 'bg-surface border border-border text-textPrimary' :
+                  selectedAlert.status === 'Investigating' ? 'bg-warning/10 text-warning' :
+                  'bg-success/10 text-success'
+                }`}>
+                  Status: {selectedAlert.status}
+                </span>
+                
+                <div className="flex space-x-3">
+                  <button className="px-4 py-2 bg-surfaceHover text-textPrimary text-sm font-medium rounded-lg hover:bg-border transition-colors">
+                    Assign Ticket
+                  </button>
+                  <button 
+                    onClick={() => setSelectedAlert(null)}
+                    className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
