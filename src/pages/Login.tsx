@@ -34,11 +34,11 @@ export default function Login() {
     setIsLoading(true);
     try {
       // Backend integration happens here
-      await login(email);
+      await login(email, password);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
-      setErrors({ submit: 'Invalid email or password' });
+      setErrors({ submit: error.message || 'Invalid email or password' });
     } finally {
       setIsLoading(false);
     }
@@ -160,13 +160,6 @@ export default function Login() {
               </button>
             </div>
           </form>
-          
-          <div className="mt-6 text-center text-sm">
-            <span className="text-[#4B5563]">Don't have an account? </span>
-            <Link to="/signup" className="font-medium text-black hover:underline transition-colors">
-              Sign up
-            </Link>
-          </div>
         </div>
       </div>
     </div>

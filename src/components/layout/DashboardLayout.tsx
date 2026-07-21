@@ -1,32 +1,32 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import Header from './Header';
 import { useAuth } from '../../context/AuthContext';
-import { Menu, ChevronLeft } from 'lucide-react';
+import ForcePasswordChangeModal from '../ui/ForcePasswordChangeModal';
+import { ShieldAlert } from 'lucide-react';
 
 export default function DashboardLayout() {
-  const { isAuthenticated } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isAuthenticated, role } = useAuth();
+  
+  const enforce2fa = localStorage.getItem('eraop_enforce_2fa') === 'true';
+  const show2faWarning = enforce2fa && role !== 'superadmin';
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   return (
-    <div className="min-h-screen bg-background text-textPrimary flex">
-      <Sidebar isCollapsed={isCollapsed} />
+    <div className="min-h-screen bg-background text-textPrimary flex relative">
+      <ForcePasswordChangeModal />
+      <Sidebar isCollapsed={false} />
       
-      {/* Collapse Toggle Button */}
-      <button 
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="fixed z-30 top-4 left-4 bg-surface border border-border rounded-md p-1.5 text-textSecondary hover:text-textPrimary hover:bg-surfaceHover transition-colors shadow-sm"
-        style={{ left: isCollapsed ? '16px' : '264px', top: '16px', transition: 'left 0.3s ease' }}
-      >
-        {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
-      </button>
-
-      <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${isCollapsed ? 'ml-16' : 'ml-64'}`}>
+      <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ml-64`}>
+        {show2faWarning && (
+          <div className="bg-warning text-warning-foreground px-4 py-2 flex items-center justify-center text-sm font-medium animate-slide-up z-50">
+            <ShieldAlert className="w-4 h-4 mr-2" />
+            Superadmin requires you to set up Two-Factor Authentication (2FA). Please go to your Profile to configure it.
+          </div>
+        )}
         <Header />
         <main className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-background">
           <Outlet />

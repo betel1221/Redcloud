@@ -25,8 +25,7 @@ const navItems = [
 ];
 
 const bottomItems = [
-  { name: 'Settings', path: '/dashboard/settings', icon: Settings },
-  { name: 'Profile', path: '/dashboard/profile', icon: User },
+  { name: 'Settings & Profile', path: '/dashboard/profile', icon: Settings },
 ];
 
 interface SidebarProps {

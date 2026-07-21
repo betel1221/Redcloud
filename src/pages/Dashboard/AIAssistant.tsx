@@ -47,6 +47,31 @@ const initialMessages: Message[] = [
 export default function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const newMessage: Message = {
+        id: messages.length + 1,
+        sender: 'user',
+        text: `📎 Uploaded file: ${file.name}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages([...messages, newMessage]);
+      
+      // Mock AI response
+      setTimeout(() => {
+        const aiResponse: Message = {
+          id: messages.length + 2,
+          sender: 'ai',
+          text: `I have received the file "${file.name}". I am analyzing its contents now. Please let me know if you have specific questions about it.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, aiResponse]);
+      }, 1500);
+    }
+  };
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +157,18 @@ export default function AIAssistant() {
 
       <div className="p-4 bg-surface/50 border-t border-border rounded-b-2xl">
         <form onSubmit={handleSend} className="flex items-center space-x-2">
-          <button type="button" className="p-2 text-textSecondary hover:text-primary transition-colors">
+          <input 
+            type="file" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+          />
+          <button 
+            type="button" 
+            title="Attach file"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 text-textSecondary hover:text-primary transition-colors"
+          >
             <Paperclip className="w-5 h-5" />
           </button>
           <input

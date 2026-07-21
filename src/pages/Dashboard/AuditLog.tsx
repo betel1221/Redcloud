@@ -4,22 +4,22 @@ import { useAuth } from '../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 const mockAuditLogs = [
-  { id: 1, action: 'Password Changed', user: 'admin@company.com', time: '10 mins ago', status: 'Success' },
-  { id: 2, action: 'Login Attempt', user: 'unknown', time: '25 mins ago', status: 'Failed' },
-  { id: 3, action: 'Server Restarted', user: 'admin@company.com', time: '1 hour ago', status: 'Success' },
-  { id: 4, action: 'Database Backup', user: 'system', time: '5 hours ago', status: 'Success' },
-  { id: 5, action: 'Role Updated', user: 'superadmin@company.com', time: '1 day ago', status: 'Success' },
-];
-
-const mockUsers = [
-  { id: 1, email: 'admin@company.com', role: 'admin', status: 'Active' },
-  { id: 2, email: 'tech@company.com', role: 'admin', status: 'Active' },
-  { id: 3, email: 'guest@company.com', role: 'viewer', status: 'Inactive' },
+  { id: 1, action: 'Password Changed', user: 'admin@company.com', time: '10 mins ago', status: 'Success', ip: '192.168.1.5', browser: 'Chrome / Windows' },
+  { id: 2, action: 'Login Attempt', user: 'unknown', time: '25 mins ago', status: 'Failed', ip: '203.0.113.45', browser: 'Firefox / Linux' },
+  { id: 3, action: 'Server Restarted', user: 'admin@company.com', time: '1 hour ago', status: 'Success', ip: '192.168.1.5', browser: 'Chrome / Windows' },
+  { id: 4, action: 'Database Backup', user: 'system', time: '5 hours ago', status: 'Success', ip: 'Internal', browser: 'Cron' },
+  { id: 5, action: 'Role Updated', user: 'superadmin@company.com', time: '1 day ago', status: 'Success', ip: '10.0.0.2', browser: 'Safari / macOS' },
 ];
 
 export default function AuditLog() {
-  const { role } = useAuth();
+  const { role, users, addUser, updateUserPassword } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [actionFilter, setActionFilter] = useState('All');
+  
+  // Create Admin state
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [createdPassword, setCreatedPassword] = useState('');
   
   // Password management state
   const [selectedUser, setSelectedUser] = useState('');
@@ -37,6 +37,7 @@ export default function AuditLog() {
     
     setIsUpdating(true);
     setTimeout(() => {
+      updateUserPassword(selectedUser, newPassword);
       setIsUpdating(false);
       setUpdateSuccess(true);
       setNewPassword('');
@@ -44,10 +45,31 @@ export default function AuditLog() {
     }, 1500);
   };
 
-  const filteredLogs = mockAuditLogs.filter(log => 
-    log.action.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    log.user.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleCreateAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminEmail) return;
+
+    setIsCreating(true);
+    // Generate random 10 character password
+    const randomPass = Math.random().toString(36).slice(-10);
+    
+    setTimeout(() => {
+      addUser(newAdminEmail, 'admin', randomPass);
+      setCreatedPassword(randomPass);
+      setIsCreating(false);
+      setNewAdminEmail('');
+    }, 1000);
+  };
+
+  const filteredLogs = mockAuditLogs.filter(log => {
+    const matchesSearch = log.action.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          log.ip.includes(searchTerm);
+    const matchesAction = actionFilter === 'All' || log.action === actionFilter;
+    return matchesSearch && matchesAction;
+  });
+
+  const uniqueActions = ['All', ...Array.from(new Set(mockAuditLogs.map(l => l.action)))];
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -83,8 +105,8 @@ export default function AuditLog() {
                   className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors"
                 >
                   <option value="">-- Choose User --</option>
-                  {mockUsers.filter(u => u.role !== 'superadmin').map(user => (
-                    <option key={user.id} value={user.email}>{user.email}</option>
+                  {users.filter(u => u.role !== 'superadmin').map(user => (
+                    <option key={user.email} value={user.email}>{user.email}</option>
                   ))}
                 </select>
               </div>
@@ -116,6 +138,54 @@ export default function AuditLog() {
               )}
             </form>
           </div>
+
+          {/* Create Admin Panel */}
+          <div className="glass-panel p-6 border-primary/30 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+            <h2 className="text-lg font-bold text-textPrimary mb-4 flex items-center relative z-10">
+              <UserCog className="w-5 h-5 mr-2 text-primary" /> Create Admin Account
+            </h2>
+            <p className="text-sm text-textSecondary mb-6 relative z-10">
+              Create a new administrator account. A secure temporary password will be generated for them.
+            </p>
+
+            <form onSubmit={handleCreateAdmin} className="space-y-4 relative z-10">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-textPrimary">Email Address</label>
+                <input 
+                  type="email" 
+                  value={newAdminEmail}
+                  onChange={(e) => { setNewAdminEmail(e.target.value); setCreatedPassword(''); }}
+                  placeholder="newadmin@company.com"
+                  className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" 
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit"
+                disabled={!newAdminEmail || isCreating}
+                className="w-full flex justify-center items-center py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              >
+                {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account & Generate Password'}
+              </button>
+
+              {createdPassword && (
+                <div className="mt-4 p-4 bg-surfaceHover border border-primary/30 rounded-lg">
+                  <p className="text-sm font-medium text-textSecondary mb-2 flex items-center">
+                    <CheckCircle className="w-4 h-4 text-success mr-2" /> Account Created
+                  </p>
+                  <p className="text-xs text-textSecondary mb-1">Temporary Password:</p>
+                  <div className="flex items-center justify-between bg-background border border-border rounded p-2">
+                    <code className="text-primary font-mono text-lg">{createdPassword}</code>
+                  </div>
+                  <p className="text-xs text-warning mt-2 italic">
+                    Please provide this password to the new admin securely. They will be forced to change it upon first login.
+                  </p>
+                </div>
+              )}
+            </form>
+          </div>
         </div>
 
         {/* System Audit Logs */}
@@ -125,17 +195,30 @@ export default function AuditLog() {
               <h2 className="text-lg font-bold text-textPrimary flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-primary" /> Activity Audit Logs
               </h2>
-              <div className="relative w-full md:w-64">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-textSecondary" />
+              <div className="flex items-center space-x-3 w-full md:w-auto">
+                <div className="relative w-full md:w-48">
+                  <select
+                    value={actionFilter}
+                    onChange={(e) => setActionFilter(e.target.value)}
+                    className="block w-full bg-surface border border-border text-sm text-textPrimary py-2 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer transition-all"
+                  >
+                    {uniqueActions.map(action => (
+                      <option key={action} value={action}>{action === 'All' ? 'All Actions' : action}</option>
+                    ))}
+                  </select>
                 </div>
-                <input
-                  type="text"
-                  placeholder="Search logs..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-9 pr-3 py-2 border border-border rounded-lg bg-surface text-sm text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                />
+                <div className="relative w-full md:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-textSecondary" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search user, action, or IP..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="block w-full pl-9 pr-3 py-2 border border-border rounded-lg bg-surface text-sm text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  />
+                </div>
               </div>
             </div>
 
@@ -144,7 +227,7 @@ export default function AuditLog() {
                 <thead className="text-xs text-textSecondary uppercase bg-surfaceHover border-b border-border">
                   <tr>
                     <th className="px-6 py-4">Action</th>
-                    <th className="px-6 py-4">User</th>
+                    <th className="px-6 py-4">User Info</th>
                     <th className="px-6 py-4">Time</th>
                     <th className="px-6 py-4">Status</th>
                   </tr>
@@ -154,7 +237,10 @@ export default function AuditLog() {
                     filteredLogs.map((log) => (
                       <tr key={log.id} className="hover:bg-surfaceHover/50 transition-colors">
                         <td className="px-6 py-4 font-medium text-textPrimary">{log.action}</td>
-                        <td className="px-6 py-4 text-textSecondary">{log.user}</td>
+                        <td className="px-6 py-4">
+                          <p className="text-textPrimary font-medium">{log.user}</p>
+                          <p className="text-xs text-textSecondary mt-0.5">IP: {log.ip} &bull; {log.browser}</p>
+                        </td>
                         <td className="px-6 py-4 text-textSecondary flex items-center">
                           <Clock className="w-3 h-3 mr-1" /> {log.time}
                         </td>

@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Bell, Search, Filter, AlertTriangle, AlertCircle, CheckCircle, ChevronDown, X, Info, Clock, Server, FileText } from 'lucide-react';
 
 const initialAlerts = [
-  { id: 1, type: 'critical', message: 'CPU utilization on App Server 01 exceeded 90%', source: 'Server Monitoring', time: '10 mins ago', status: 'Open' },
-  { id: 2, type: 'critical', message: 'Multiple failed login attempts from IP 192.168.1.50', source: 'Security', time: '25 mins ago', status: 'Investigating' },
-  { id: 3, type: 'warning', message: 'Database connection pool near capacity (85%)', source: 'Database Monitoring', time: '1 hour ago', status: 'Open' },
-  { id: 4, type: 'warning', message: 'High memory usage on Worker Node B', source: 'Server Monitoring', time: '2 hours ago', status: 'Resolved' },
-  { id: 5, type: 'info', message: 'Automated backup completed successfully', source: 'System', time: '5 hours ago', status: 'Resolved' },
-  { id: 6, type: 'info', message: 'New Redhelp agent version available (v2.4)', source: 'System', time: '1 day ago', status: 'Open' },
+  { id: 1, type: 'critical', message: 'CPU utilization on App Server 01 exceeded 90%', source: 'Server Monitoring', time: '10 mins ago', status: 'Open', mitigation: 'Check process list and increase worker capacity.', affected: 'App Server 01, Load Balancer' },
+  { id: 2, type: 'critical', message: 'Multiple failed login attempts from IP 192.168.1.50', source: 'Security', time: '25 mins ago', status: 'Investigating', mitigation: 'IP has been temporarily blocked. Review firewall rules.', affected: 'Gateway Auth' },
+  { id: 3, type: 'warning', message: 'Database connection pool near capacity (85%)', source: 'Database Monitoring', time: '1 hour ago', status: 'Open', mitigation: 'Increase connection pool size in Prisma configuration.', affected: 'FinanceDB' },
+  { id: 4, type: 'warning', message: 'High memory usage on Worker Node B', source: 'Server Monitoring', time: '2 hours ago', status: 'Resolved', mitigation: 'Restarted Node B.', affected: 'Worker Node B' },
+  { id: 5, type: 'info', message: 'Automated backup completed successfully', source: 'System', time: '5 hours ago', status: 'Resolved', mitigation: 'None required.', affected: 'All Databases' },
+  { id: 6, type: 'info', message: 'New Redhelp agent version available (v2.4)', source: 'System', time: '1 day ago', status: 'Open', mitigation: 'Schedule update during maintenance window.', affected: 'Agent Deployment' },
 ];
 
 export default function Alerts() {
@@ -171,11 +171,25 @@ export default function Alerts() {
                     <p className="text-sm text-textPrimary font-medium">{selectedAlert.source}</p>
                   </div>
                 </div>
-                <div className="flex items-start">
+                <div className="flex items-start mb-3">
                   <Clock className="w-5 h-5 text-textSecondary mr-3 mt-0.5" />
                   <div>
                     <p className="text-xs text-textSecondary uppercase font-bold mb-1">Timestamp</p>
                     <p className="text-sm text-textPrimary font-medium">{selectedAlert.time}</p>
+                  </div>
+                </div>
+                <div className="flex items-start mb-3 border-t border-border/50 pt-3 mt-3">
+                  <AlertTriangle className="w-5 h-5 text-textSecondary mr-3 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-textSecondary uppercase font-bold mb-1">Affected Systems</p>
+                    <p className="text-sm text-textPrimary font-medium">{selectedAlert.affected}</p>
+                  </div>
+                </div>
+                <div className="flex items-start border-t border-border/50 pt-3 mt-3">
+                  <CheckCircle className="w-5 h-5 text-textSecondary mr-3 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-textSecondary uppercase font-bold mb-1">Recommended Mitigation</p>
+                    <p className="text-sm text-textPrimary font-medium">{selectedAlert.mitigation}</p>
                   </div>
                 </div>
               </div>
@@ -190,8 +204,11 @@ export default function Alerts() {
                 </span>
                 
                 <div className="flex space-x-3">
-                  <button className="px-4 py-2 bg-surfaceHover text-textPrimary text-sm font-medium rounded-lg hover:bg-border transition-colors">
-                    Assign Ticket
+                  <button 
+                    onClick={() => setSelectedAlert({ ...selectedAlert, status: 'Investigating' })}
+                    className="px-4 py-2 bg-surfaceHover text-textPrimary text-sm font-medium rounded-lg hover:bg-border transition-colors"
+                  >
+                    Investigate
                   </button>
                   <button 
                     onClick={() => setSelectedAlert(null)}

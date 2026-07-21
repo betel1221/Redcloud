@@ -61,6 +61,19 @@ export default function DashboardOverview() {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
 
+  const generatePDF = () => {
+    // Mock PDF download
+    const element = document.createElement("a");
+    const file = new Blob(["MOCK PDF CONTENT - RedCloud System Report\n\nPerformance metrics, alerts, and system health."], { type: 'application/pdf' });
+    element.href = URL.createObjectURL(file);
+    element.download = "RedCloud_System_Report.pdf";
+    document.body.appendChild(element); // Required for this to work in FireFox
+    element.click();
+    
+    setReportGenerated(true);
+    setTimeout(() => setReportGenerated(false), 3000);
+  };
+
   useEffect(() => {
     // Backend developers: Replace this setTimeout with your actual fetch calls
     // e.g., const res = await fetch('/api/dashboard'); const json = await res.json(); setData(json);
@@ -206,10 +219,7 @@ export default function DashboardOverview() {
         />
         <div 
           className="glass-card flex flex-col justify-center items-center text-center group cursor-pointer hover:bg-surfaceHover/80 transition-colors"
-          onClick={() => {
-            setReportGenerated(true);
-            setTimeout(() => setReportGenerated(false), 3000);
-          }}
+          onClick={generatePDF}
         >
           <Activity className="w-8 h-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
           <h3 className="text-lg font-bold text-textPrimary">Generate Full Report</h3>
