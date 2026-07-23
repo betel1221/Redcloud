@@ -4,29 +4,29 @@
 
 @layer base {
   :root {
-    --color-background: #FFFFFF;
-    --color-surface: #F9FAFB;
-    --color-surfaceHover: #FEE2E2;
-    --color-primary: #EF4444;
-    --color-success: #34D399;
-    --color-warning: #FBBF24;
-    --color-danger: #FECACA;
-    --color-textPrimary: #111111;
-    --color-textSecondary: #4B5563;
-    --color-border: #E5E7EB;
+    --color-background: 255 255 255;
+    --color-surface: 249 250 251;
+    --color-surfaceHover: 254 226 226;
+    --color-primary: 239 68 68;
+    --color-success: 52 211 153;
+    --color-warning: 251 191 36;
+    --color-danger: 254 202 202;
+    --color-textPrimary: 17 17 17;
+    --color-textSecondary: 75 85 99;
+    --color-border: 229 231 235;
   }
 
   .dark {
-    --color-background: #0B0D0E;
-    --color-surface: #15181A;
-    --color-surfaceHover: #2A1616;
-    --color-primary: #EF4444;
-    --color-success: #34D399;
-    --color-warning: #FBBF24;
-    --color-danger: #FECACA;
-    --color-textPrimary: #F9FAFB;
-    --color-textSecondary: #9CA3AF;
-    --color-border: #26292D;
+    --color-background: 11 13 14;
+    --color-surface: 21 24 26;
+    --color-surfaceHover: 42 22 22;
+    --color-primary: 239 68 68;
+    --color-success: 52 211 153;
+    --color-warning: 251 191 36;
+    --color-danger: 254 202 202;
+    --color-textPrimary: 249 250 251;
+    --color-textSecondary: 156 163 175;
+    --color-border: 38 41 45;
   }
 }
 
@@ -61,14 +61,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-surface);
+  background: rgb(var(--color-surface));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: rgb(var(--color-border));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-textSecondary);
+  background: rgb(var(--color-textSecondary));
 }

@@ -156,12 +156,26 @@ export default function Profile() {
                   <h2 className="text-lg font-bold text-textPrimary flex items-center">
                     <User className="w-5 h-5 mr-2 text-primary" /> Professional Information
                   </h2>
-                  {!profileComplete && (
-                    <span className="bg-primary/20 text-primary text-xs font-bold px-2 py-1 rounded animate-pulse">
-                      Setup Required
-                    </span>
-                  )}
+                  <div className="flex gap-2">
+                    {!profileComplete && (
+                      <span className="bg-primary/20 text-primary text-xs font-bold px-2 py-1 rounded animate-pulse">
+                        Setup Required
+                      </span>
+                    )}
+                    {role !== 'superadmin' && (
+                      <span className="bg-warning/20 text-warning text-xs font-bold px-2 py-1 rounded">
+                        Read Only
+                      </span>
+                    )}
+                  </div>
                 </div>
+                
+                {role !== 'superadmin' && (
+                  <div className="mb-4 p-3 bg-surfaceHover border border-border rounded-lg text-sm text-textSecondary flex items-start">
+                    <Shield className="w-4 h-4 mr-2 text-warning flex-shrink-0 mt-0.5" />
+                    <p>Your profile is locked by policy. To update your information or request a password reset, please contact a Super Administrator.</p>
+                  </div>
+                )}
                 
                 <form className="space-y-4" onSubmit={handleSaveProfile}>
                   <div className="space-y-1">
@@ -172,8 +186,9 @@ export default function Profile() {
                         type="text" 
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
+                        disabled={role !== 'superadmin'}
                         placeholder="e.g. John Doe"
-                        className="w-full bg-surface border border-border rounded-lg pl-10 pr-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" 
+                        className="w-full bg-surface border border-border rounded-lg pl-10 pr-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed" 
                       />
                     </div>
                   </div>
@@ -185,24 +200,29 @@ export default function Profile() {
                         type="tel" 
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
+                        disabled={role !== 'superadmin'}
                         placeholder="+1 (555) 000-0000"
-                        className="w-full bg-surface border border-border rounded-lg pl-10 pr-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" 
+                        className="w-full bg-surface border border-border rounded-lg pl-10 pr-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed" 
                       />
                     </div>
                   </div>
                   <div className="pt-2 flex items-center">
-                    <button 
-                      type="submit"
-                      disabled={!fullName}
-                      className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Profile
-                    </button>
-                    {isSaved && (
-                      <span className="ml-4 text-success flex items-center text-sm font-medium animate-fade-in">
-                        <CheckCircle className="w-4 h-4 mr-1" /> Saved Successfully
-                      </span>
+                    {role === 'superadmin' && (
+                      <>
+                        <button 
+                          type="submit"
+                          disabled={!fullName}
+                          className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Profile
+                        </button>
+                        {isSaved && (
+                          <span className="ml-4 text-success flex items-center text-sm font-medium animate-fade-in">
+                            <CheckCircle className="w-4 h-4 mr-1" /> Saved Successfully
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </form>

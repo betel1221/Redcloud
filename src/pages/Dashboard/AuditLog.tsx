@@ -181,8 +181,9 @@ export default function AuditLog() {
             <h2 className="text-lg font-bold text-textPrimary mb-4 flex items-center relative z-10">
               <UserCog className="w-5 h-5 mr-2 text-primary" /> Admin Password Reset
             </h2>
-            <p className="text-sm text-textSecondary mb-6 relative z-10">
-              Directly reset an admin's password if they are locked out. You do not need their current password.
+            <p className="text-sm text-textSecondary mb-6 relative z-10 bg-surface/50 p-3 rounded-lg border border-border/50">
+              <strong className="text-textPrimary block mb-1">Policy:</strong>
+              Standard users cannot change their passwords. Use this utility to assign a new temporary password and provide it to the user securely.
             </p>
             
             <form onSubmit={handlePasswordReset} className="space-y-4 relative z-10">
@@ -201,14 +202,32 @@ export default function AuditLog() {
               </div>
               
               <div className="space-y-1">
-                <label className="text-sm font-medium text-textPrimary">New Password</label>
-                <input 
-                  type="password" 
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors" 
-                />
+                <label className="text-sm font-medium text-textPrimary flex justify-between">
+                  <span>New Password</span>
+                  <button 
+                    type="button" 
+                    className="text-xs text-primary hover:underline flex items-center"
+                    onClick={() => {
+                      const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+                      let password = "";
+                      for (let i = 0; i < 12; i++) {
+                        password += chars.charAt(Math.floor(Math.random() * chars.length));
+                      }
+                      setNewPassword(password);
+                    }}
+                  >
+                    Auto-generate
+                  </button>
+                </label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter or generate password"
+                    className="w-full bg-surface border border-border rounded-lg pl-4 pr-4 py-2.5 text-textPrimary focus:outline-none focus:border-primary transition-colors font-mono text-sm" 
+                  />
+                </div>
               </div>
 
               <button 

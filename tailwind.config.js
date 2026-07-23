@@ -8,16 +8,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: 'var(--color-background)',
-        surface: 'var(--color-surface)',
-        surfaceHover: 'var(--color-surfaceHover)',
-        primary: 'var(--color-primary)',
-        success: 'var(--color-success)',
-        warning: 'var(--color-warning)',
-        danger: 'var(--color-danger)',
-        textPrimary: 'var(--color-textPrimary)',
-        textSecondary: 'var(--color-textSecondary)',
-        border: 'var(--color-border)',
+        background: 'rgb(var(--color-background) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        surfaceHover: 'rgb(var(--color-surfaceHover) / <alpha-value>)',
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
+        textPrimary: 'rgb(var(--color-textPrimary) / <alpha-value>)',
+        textSecondary: 'rgb(var(--color-textSecondary) / <alpha-value>)',
+        border: 'rgb(var(--color-border) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
