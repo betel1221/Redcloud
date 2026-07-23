@@ -16,7 +16,7 @@ export default function AuditLog() {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState('All');
   const [auditLogs, setAuditLogs] = useState(mockAuditLogs);
-  const [pendingRequests, setPendingRequests] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [approvedCredentials, setApprovedCredentials] = useState(null);
   const [requireApproval, setRequireApproval] = useState(true);
   
@@ -114,7 +114,7 @@ export default function AuditLog() {
   };
 
   // Approve pending admin request
-  const handleApprove = (reqId) => {
+  const handleApprove = (reqId: number) => {
     const req = pendingRequests.find(r => r.id === reqId);
     if (!req) return;
     addUser(req.email, 'admin', req.password);
@@ -134,7 +134,7 @@ export default function AuditLog() {
   };
 
   // Reject pending admin request
-  const handleReject = (reqId) => {
+  const handleReject = (reqId: number) => {
     const req = pendingRequests.find(r => r.id === reqId);
     if (!req) return;
     const log = {

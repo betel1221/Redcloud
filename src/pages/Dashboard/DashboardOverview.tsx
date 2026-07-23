@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, ChevronRight, Bot, Loader2, ArrowRight } from 'lucide-react';
+import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, ChevronRight, Bot, Loader2, ArrowRight, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PerformanceChart, { mockPerformanceData } from '../../components/ui/PerformanceChart';
