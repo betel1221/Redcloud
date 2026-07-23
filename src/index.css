@@ -3,6 +3,34 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-background: #FFFFFF;
+    --color-surface: #F9FAFB;
+    --color-surfaceHover: #FEE2E2;
+    --color-primary: #EF4444;
+    --color-success: #34D399;
+    --color-warning: #FBBF24;
+    --color-danger: #FECACA;
+    --color-textPrimary: #111111;
+    --color-textSecondary: #4B5563;
+    --color-border: #E5E7EB;
+  }
+
+  .dark {
+    --color-background: #0B0D0E;
+    --color-surface: #15181A;
+    --color-surfaceHover: #2A1616;
+    --color-primary: #EF4444;
+    --color-success: #34D399;
+    --color-warning: #FBBF24;
+    --color-danger: #FECACA;
+    --color-textPrimary: #F9FAFB;
+    --color-textSecondary: #9CA3AF;
+    --color-border: #26292D;
+  }
+}
+
+@layer base {
   body {
     @apply bg-background text-textPrimary font-sans antialiased;
   }
@@ -33,14 +61,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #F9FAFB;
+  background: var(--color-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: var(--color-border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
+  background: var(--color-textSecondary);
 }

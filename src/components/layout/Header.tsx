@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Search, Bell, User, LogOut, CheckCircle, AlertTriangle, AlertCircle, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Header() {
   const { userEmail, logout, role } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,6 +98,14 @@ export default function Header() {
       </div>
       
       <div className="flex items-center space-x-4">
+        <button
+          onClick={toggleTheme}
+          className="p-2 text-textSecondary hover:text-textPrimary transition-colors rounded-full hover:bg-surfaceHover"
+          title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+        >
+          {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+        </button>
+        
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setShowNotifications(!showNotifications)}
