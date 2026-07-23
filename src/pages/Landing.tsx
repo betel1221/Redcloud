@@ -6,17 +6,17 @@ export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] text-black overflow-hidden flex flex-col font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-background text-textPrimary overflow-hidden flex flex-col font-sans selection:bg-primary selection:text-white">
       {/* Navbar */}
       <nav className="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center relative z-20">
         <div className="flex items-center space-x-2">
-          <Activity className="w-8 h-8 text-[#EF4444]" />
-          <span className="text-xl font-bold tracking-widest uppercase">Redhelp</span>
+          <Activity className="w-8 h-8 text-primary" />
+          <span className="text-xl font-bold tracking-widest uppercase text-textPrimary">Redhelp</span>
         </div>
         <div className="flex items-center space-x-4">
           <button 
             onClick={() => navigate('/login')}
-            className="px-6 py-2 bg-[#EF4444] text-white rounded-md hover:bg-[#DC2626] transition-all duration-300 font-medium text-sm shadow-sm"
+            className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-all duration-300 font-medium text-sm shadow-sm"
           >
             Log In
           </button>
@@ -26,25 +26,25 @@ export default function Landing() {
       {/* Hero Section */}
       <main className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 text-center">
         <div className="animate-slide-up z-10 max-w-4xl">
-          <div className="inline-flex items-center px-3 py-1 rounded-full border border-[#FECACA] bg-[#F9FAFB] mb-8">
+          <div className="inline-flex items-center px-3 py-1 rounded-full border border-border bg-surface mb-8">
             <span className="w-2 h-2 rounded-full bg-success mr-2 animate-pulse"></span>
-            <span className="text-xs font-medium tracking-wide text-[#4B5563] uppercase">Welcome to Redhelp</span>
+            <span className="text-xs font-medium tracking-wide text-textSecondary uppercase">Welcome to Redhelp</span>
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-8 text-black">
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-8 text-textPrimary">
             Intelligence.<br />
             Operations. <br />
             Absolute Control.
           </h1>
           
-          <p className="text-lg md:text-xl text-[#4B5563] mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-textSecondary mb-12 max-w-2xl mx-auto leading-relaxed">
             The next generation Enterprise RAG AI Operations Platform. Monitor, scale, and secure your autonomous infrastructure with unprecedented clarity.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <button 
               onClick={() => navigate('/login')}
-              className="group px-8 py-4 bg-[#EF4444] text-white rounded-md font-bold text-lg hover:bg-[#DC2626] transition-all duration-300 flex items-center shadow-md shadow-[#EF4444]/20"
+              className="group px-8 py-4 bg-primary text-white rounded-md font-bold text-lg hover:bg-primary/90 transition-all duration-300 flex items-center shadow-md shadow-primary/20"
             >
               Access Dashboard
               <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -54,32 +54,32 @@ export default function Landing() {
 
         {/* Feature Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mt-32 z-10">
-          <div className="bg-[#F9FAFB] p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-[#FECACA] rounded-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/5 flex items-center justify-center mb-6 border border-[#EF4444]/10 group-hover:bg-[#EF4444]/10 transition-colors">
-              <Zap className="w-6 h-6 text-black" />
+          <div className="bg-surface p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-border rounded-lg">
+            <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center mb-6 border border-primary/10 group-hover:bg-primary/10 transition-colors">
+              <Zap className="w-6 h-6 text-textPrimary" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-black">Real-time Telemetry</h3>
-            <p className="text-[#4B5563] text-sm leading-relaxed">Instant insights into CPU, Memory, and AI Inference latency with zero delay.</p>
+            <h3 className="text-xl font-bold mb-3 text-textPrimary">Real-time Telemetry</h3>
+            <p className="text-textSecondary text-sm leading-relaxed">Instant insights into CPU, Memory, and AI Inference latency with zero delay.</p>
           </div>
-          <div className="bg-[#F9FAFB] p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-[#FECACA] rounded-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/5 flex items-center justify-center mb-6 border border-[#EF4444]/10 group-hover:bg-[#EF4444]/10 transition-colors">
-              <Shield className="w-6 h-6 text-black" />
+          <div className="bg-surface p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-border rounded-lg">
+            <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center mb-6 border border-primary/10 group-hover:bg-primary/10 transition-colors">
+              <Shield className="w-6 h-6 text-textPrimary" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-black">Threat Mitigation</h3>
-            <p className="text-[#4B5563] text-sm leading-relaxed">Enterprise-grade security monitoring with automated intrusion response protocols.</p>
+            <h3 className="text-xl font-bold mb-3 text-textPrimary">Threat Mitigation</h3>
+            <p className="text-textSecondary text-sm leading-relaxed">Enterprise-grade security monitoring with automated intrusion response protocols.</p>
           </div>
-          <div className="bg-[#F9FAFB] p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-[#FECACA] rounded-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/5 flex items-center justify-center mb-6 border border-[#EF4444]/10 group-hover:bg-[#EF4444]/10 transition-colors">
-              <Network className="w-6 h-6 text-black" />
+          <div className="bg-surface p-8 text-left group hover:-translate-y-2 transition-all duration-300 border border-border rounded-lg">
+            <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center mb-6 border border-primary/10 group-hover:bg-primary/10 transition-colors">
+              <Network className="w-6 h-6 text-textPrimary" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-black">Distributed RAG</h3>
-            <p className="text-[#4B5563] text-sm leading-relaxed">Seamless orchestration of multi-vector databases across global regions.</p>
+            <h3 className="text-xl font-bold mb-3 text-textPrimary">Distributed RAG</h3>
+            <p className="text-textSecondary text-sm leading-relaxed">Seamless orchestration of multi-vector databases across global regions.</p>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="py-8 text-center text-textSecondary text-sm z-10 border-t border-[#EF4444]/10 mt-20">
+      <footer className="py-8 text-center text-textSecondary text-sm z-10 border-t border-border mt-20">
         <p>&copy; 2026 Redhelp All rights reserved.</p>
       </footer>
     </div>

@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut, CheckCircle, AlertTriangle, AlertCircle, Moon, Sun } from 'lucide-react';
+import { Search, Bell, User, LogOut, CheckCircle, AlertTriangle, AlertCircle, Moon, Sun, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
-export default function Header() {
+interface HeaderProps {
+  onMenuToggle?: () => void;
+}
+
+export default function Header({ onMenuToggle }: HeaderProps) {
   const { userEmail, logout, role } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -50,9 +54,19 @@ export default function Header() {
   ];
 
   return (
-    <header className="h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-10">
-      <div className="flex-1 flex items-center">
-        <div className="relative w-96" ref={searchRef}>
+    <header className="h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 w-full">
+      <div className="flex flex-1 items-center space-x-2 md:space-x-4">
+        {onMenuToggle && (
+          <button 
+            onClick={onMenuToggle}
+            className="md:hidden p-2 text-textSecondary hover:text-textPrimary transition-colors rounded-lg hover:bg-surfaceHover"
+            title="Open Menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        )}
+        
+        <div className="relative w-full max-w-[200px] sm:max-w-xs md:max-w-sm lg:w-96" ref={searchRef}>
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-textSecondary" />
           </div>
@@ -153,7 +167,7 @@ export default function Header() {
           )}
         </div>
         
-        <div className="flex items-center space-x-3 border-l border-border pl-4">
+        <div className="flex items-center space-x-2 md:space-x-3 border-l border-border pl-3 md:pl-4">
           <div className="flex flex-col text-right hidden sm:block">
             <span className="text-sm font-medium text-textPrimary">{userEmail || 'Admin'}</span>
             <span className="text-xs text-textSecondary">

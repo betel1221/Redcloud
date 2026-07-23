@@ -45,30 +45,30 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
-      <Link to="/" className="absolute top-8 left-8 flex items-center text-[#4B5563] hover:text-black transition-colors group z-20 text-sm font-medium">
+    <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      <Link to="/" className="absolute top-8 left-8 flex items-center text-textSecondary hover:text-textPrimary transition-colors group z-20 text-sm font-medium">
         <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
         Back to Home
       </Link>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in">
         <div className="flex justify-center items-center mb-6">
-          <Link to="/" className="bg-[#F9FAFB] p-3 rounded-2xl border border-[#FECACA] hover:bg-[#FEE2E2] transition-colors cursor-pointer">
-            <Activity className="w-10 h-10 text-[#EF4444]" />
+          <Link to="/" className="bg-surface p-3 rounded-2xl border border-border hover:bg-surfaceHover transition-colors cursor-pointer">
+            <Activity className="w-10 h-10 text-primary" />
           </Link>
         </div>
         <div className="mb-8 text-center relative z-10">
-          <h1 className="text-3xl font-extrabold text-black tracking-tight mb-2">
+          <h1 className="text-3xl font-extrabold text-textPrimary tracking-tight mb-2">
             Log in to Redhelp
           </h1>
-          <p className="mt-2 text-center text-sm text-[#4B5563]">
+          <p className="mt-2 text-center text-sm text-textSecondary">
             Welcome back to the Operations Platform
           </p>
         </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
-        <div className="bg-[#F9FAFB] py-8 px-4 sm:px-10 border border-[#FECACA] rounded-lg shadow-xl">
+        <div className="bg-surface py-8 px-4 sm:px-10 border border-border rounded-lg shadow-xl">
           <form className="space-y-5" onSubmit={handleSubmit} noValidate>
             
             {errors.submit && (
@@ -78,12 +78,12 @@ export default function Login() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-black">
+              <label htmlFor="email" className="block text-sm font-medium text-textPrimary">
                 Email address
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-[#4B5563]" />
+                  <Mail className="h-5 w-5 text-textSecondary" />
                 </div>
                 <input
                   id="email"
@@ -92,7 +92,7 @@ export default function Login() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({...errors, email: ''}); }}
-                  className={`block w-full pl-10 bg-[#FFFFFF] border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#FECACA] focus:ring-white'} rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 bg-background border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-border focus:ring-primary'} rounded-md py-2.5 text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="admin@company.com"
                 />
               </div>
@@ -100,12 +100,12 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-black">
+              <label htmlFor="password" className="block text-sm font-medium text-textPrimary">
                 Password
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-[#4B5563]" />
+                  <Lock className="h-5 w-5 text-textSecondary" />
                 </div>
                 <input
                   id="password"
@@ -114,13 +114,13 @@ export default function Login() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors({...errors, password: ''}); }}
-                  className={`block w-full pl-10 pr-10 bg-[#FFFFFF] border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#FECACA] focus:ring-white'} rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
+                  className={`block w-full pl-10 pr-10 bg-background border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-border focus:ring-primary'} rounded-md py-2.5 text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm`}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#4B5563] hover:text-black transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-textSecondary hover:text-textPrimary transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -134,15 +134,15 @@ export default function Login() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 bg-[#FFFFFF] border-[#FECACA] rounded text-black focus:ring-white focus:ring-offset-[#FFFFFF] accent-white"
+                  className="h-4 w-4 bg-background border-border rounded text-primary focus:ring-primary focus:ring-offset-background accent-primary"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#4B5563]">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-textSecondary">
                   Remember me
                 </label>
               </div>
 
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium text-black hover:underline transition-colors">
+                <Link to="/forgot-password" className="font-medium text-textPrimary hover:underline transition-colors">
                   Forgot your password?
                 </Link>
               </div>
@@ -152,7 +152,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-[#EF4444] hover:bg-[#DC2626] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EF4444] focus:ring-offset-[#FFFFFF] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Authenticating...</>

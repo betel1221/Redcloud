@@ -10,7 +10,8 @@ import {
   User,
   Activity,
   Bot,
-  Shield
+  Shield,
+  X
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
@@ -31,9 +32,11 @@ const bottomItems = [
 
 interface SidebarProps {
   isCollapsed: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ isCollapsed }: SidebarProps) {
+export default function Sidebar({ isCollapsed, isOpen = false, onClose }: SidebarProps) {
   const { role } = useAuth();
   
   const currentBottomItems = [...bottomItems];
@@ -43,12 +46,24 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
 
   return (
     <div className={cn(
-      "bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-20 transition-all duration-300",
-      isCollapsed ? "w-16" : "w-64"
+      "bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300",
+      isCollapsed ? "w-16" : "w-64",
+      "md:translate-x-0",
+      isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
-      <div className="h-16 flex items-center justify-center px-4 border-b border-border">
-        <Activity className="w-6 h-6 text-primary flex-shrink-0" />
-        {!isCollapsed && <span className="text-lg font-bold text-textPrimary tracking-wider ml-2">Redhelp</span>}
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        <div className="flex items-center">
+          <Activity className="w-6 h-6 text-primary flex-shrink-0" />
+          {!isCollapsed && <span className="text-lg font-bold text-textPrimary tracking-wider ml-2">Redhelp</span>}
+        </div>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="md:hidden p-1 text-textSecondary hover:text-textPrimary rounded-lg hover:bg-surfaceHover transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
       
       <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">

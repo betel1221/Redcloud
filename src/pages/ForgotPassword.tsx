@@ -63,22 +63,22 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
-      <Link to="/login" className="absolute top-8 left-8 flex items-center text-[#4B5563] hover:text-black transition-colors group z-20 text-sm font-medium">
+    <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      <Link to="/login" className="absolute top-8 left-8 flex items-center text-textSecondary hover:text-textPrimary transition-colors group z-20 text-sm font-medium">
         <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
         Back to Login
       </Link>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in">
         <div className="flex justify-center items-center mb-6">
-          <div className="bg-[#F9FAFB] p-3 rounded-2xl border border-[#FECACA]">
-            <ShieldAlert className="w-10 h-10 text-[#EF4444]" />
+          <div className="bg-surface p-3 rounded-2xl border border-border">
+            <ShieldAlert className="w-10 h-10 text-primary" />
           </div>
         </div>
-        <h2 className="text-center text-3xl font-bold text-black tracking-tight">
+        <h2 className="text-center text-3xl font-bold text-textPrimary tracking-tight">
           Reset Password
         </h2>
-        <p className="mt-2 text-center text-sm text-[#4B5563]">
+        <p className="mt-2 text-center text-sm text-textSecondary">
           {step === 1 && "Enter your email to begin the reset process"}
           {step === 2 && "Security verification required"}
           {step === 3 && "Create a new secure password"}
@@ -88,23 +88,23 @@ export default function ForgotPassword() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-[#F9FAFB] py-8 px-4 sm:px-10 border border-[#FECACA] rounded-lg shadow-xl relative overflow-hidden">
+        <div className="bg-surface py-8 px-4 sm:px-10 border border-border rounded-lg shadow-xl relative overflow-hidden">
           
           {/* Step 1: Email */}
           {step === 1 && (
             <form className="space-y-5 animate-slide-up" onSubmit={handleEmailSubmit}>
               <div>
-                <label className="block text-sm font-medium text-black">Admin Email address</label>
+                <label className="block text-sm font-medium text-textPrimary">Admin Email address</label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-[#4B5563]" />
+                    <Mail className="h-5 w-5 text-textSecondary" />
                   </div>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-10 bg-[#FFFFFF] border border-[#FECACA] rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm"
+                    className="block w-full pl-10 bg-background border border-border rounded-md py-2.5 text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm"
                     placeholder="admin@company.com"
                   />
                 </div>
@@ -112,7 +112,7 @@ export default function ForgotPassword() {
               <button
                 type="submit"
                 disabled={!email}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-[#EF4444] hover:bg-[#DC2626] disabled:opacity-50 transition-all"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-all"
               >
                 Continue
               </button>
@@ -122,25 +122,25 @@ export default function ForgotPassword() {
           {/* Step 2: Security Verification */}
           {step === 2 && (
             <form className="space-y-5 animate-slide-up" onSubmit={handleSecuritySubmit}>
-              {error && <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded">{error}</p>}
+              {error && <p className="text-red-500 text-sm text-center font-medium bg-red-500/10 p-2 rounded border border-red-500/50">{error}</p>}
               <div>
-                <label className="block text-sm font-medium text-black flex items-center mb-2">
-                  <ShieldQuestion className="w-4 h-4 mr-1 text-[#EF4444]" /> Security Question
+                <label className="block text-sm font-medium text-textPrimary flex items-center mb-2">
+                  <ShieldQuestion className="w-4 h-4 mr-1 text-primary" /> Security Question
                 </label>
-                <p className="text-sm font-medium text-[#4B5563] mb-3">What is the name of this monitoring platform?</p>
+                <p className="text-sm font-medium text-textSecondary mb-3">What is the name of this monitoring platform?</p>
                 <input
                   type="text"
                   required
                   value={securityAnswer}
                   onChange={(e) => { setSecurityAnswer(e.target.value); setError(''); }}
-                  className="block w-full bg-[#FFFFFF] border border-[#FECACA] rounded-md py-2.5 px-3 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm"
+                  className="block w-full bg-background border border-border rounded-md py-2.5 px-3 text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm"
                   placeholder="Enter your answer (hint: redhelp)"
                 />
               </div>
               <button
                 type="submit"
                 disabled={!securityAnswer}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-[#EF4444] hover:bg-[#DC2626] disabled:opacity-50 transition-all"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-all"
               >
                 Verify Identity
               </button>
@@ -150,35 +150,35 @@ export default function ForgotPassword() {
           {/* Step 3: New Password */}
           {step === 3 && (
             <form className="space-y-5 animate-slide-up" onSubmit={handlePasswordSubmit}>
-              {error && <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded">{error}</p>}
+              {error && <p className="text-red-500 text-sm text-center font-medium bg-red-500/10 p-2 rounded border border-red-500/50">{error}</p>}
               <div>
-                <label className="block text-sm font-medium text-black">New Password</label>
+                <label className="block text-sm font-medium text-textPrimary">New Password</label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-[#4B5563]" />
+                    <Lock className="h-5 w-5 text-textSecondary" />
                   </div>
                   <input
                     type="password"
                     required
                     value={newPassword}
                     onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
-                    className="block w-full pl-10 bg-[#FFFFFF] border border-[#FECACA] rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm"
+                    className="block w-full pl-10 bg-background border border-border rounded-md py-2.5 text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm"
                     placeholder="Enter at least 8 characters"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-black">Confirm Password</label>
+                <label className="block text-sm font-medium text-textPrimary">Confirm Password</label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-[#4B5563]" />
+                    <Lock className="h-5 w-5 text-textSecondary" />
                   </div>
                   <input
                     type="password"
                     required
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
-                    className="block w-full pl-10 bg-[#FFFFFF] border border-[#FECACA] rounded-md py-2.5 text-black placeholder-[#4B5563] focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm"
+                    className="block w-full pl-10 bg-background border border-border rounded-md py-2.5 text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:border-transparent transition-all sm:text-sm"
                     placeholder="Re-enter password"
                   />
                 </div>
@@ -186,7 +186,7 @@ export default function ForgotPassword() {
               <button
                 type="submit"
                 disabled={!newPassword || !confirmPassword}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-[#EF4444] hover:bg-[#DC2626] disabled:opacity-50 transition-all"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-all"
               >
                 Submit Request
               </button>
@@ -197,10 +197,10 @@ export default function ForgotPassword() {
           {step === 4 && (
             <div className="text-center space-y-4 animate-fade-in py-4">
               <div className="flex justify-center mb-4">
-                <Loader2 className="w-12 h-12 text-[#EF4444] animate-spin" />
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
               </div>
-              <h3 className="text-lg font-bold text-black">Request Pending</h3>
-              <p className="text-sm text-[#4B5563]">
+              <h3 className="text-lg font-bold text-textPrimary">Request Pending</h3>
+              <p className="text-sm text-textSecondary">
                 Your password reset request has been forwarded to the Super Admin. This page will automatically update once approved.
               </p>
             </div>
@@ -210,10 +210,10 @@ export default function ForgotPassword() {
           {step === 5 && (
             <div className="text-center space-y-4 animate-fade-in py-4">
               <div className="flex justify-center mb-4">
-                <CheckCircle className="w-12 h-12 text-green-500" />
+                <CheckCircle className="w-12 h-12 text-success" />
               </div>
-              <h3 className="text-lg font-bold text-black">Password Updated</h3>
-              <p className="text-sm text-[#4B5563]">
+              <h3 className="text-lg font-bold text-textPrimary">Password Updated</h3>
+              <p className="text-sm text-textSecondary">
                 Your password has been successfully reset. You can now login with your new credentials.
               </p>
               <Link to="/login" className="mt-4 w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-green-500 hover:bg-green-600 transition-all">
