@@ -2,32 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --color-background: 255 255 255;
-    --color-surface: 249 250 251;
-    --color-surfaceHover: 254 226 226;
-    --color-primary: 239 68 68;
-    --color-success: 52 211 153;
-    --color-warning: 251 191 36;
-    --color-danger: 254 202 202;
-    --color-textPrimary: 17 17 17;
-    --color-textSecondary: 75 85 99;
-    --color-border: 229 231 235;
-  }
+:root {
+  --color-background: 255 255 255;
+  --color-surface: 249 250 251;
+  --color-surfaceHover: 254 226 226;
+  --color-primary: 239 68 68;
+  --color-success: 52 211 153;
+  --color-warning: 251 191 36;
+  --color-danger: 254 202 202;
+  --color-textPrimary: 17 17 17;
+  --color-textSecondary: 75 85 99;
+  --color-border: 229 231 235;
+}
 
-  .dark {
-    --color-background: 11 13 14;
-    --color-surface: 21 24 26;
-    --color-surfaceHover: 42 22 22;
-    --color-primary: 239 68 68;
-    --color-success: 52 211 153;
-    --color-warning: 251 191 36;
-    --color-danger: 254 202 202;
-    --color-textPrimary: 249 250 251;
-    --color-textSecondary: 156 163 175;
-    --color-border: 38 41 45;
-  }
+.dark {
+  --color-background: 11 13 14;
+  --color-surface: 21 24 26;
+  --color-surfaceHover: 42 22 22;
+  --color-primary: 239 68 68;
+  --color-success: 52 211 153;
+  --color-warning: 251 191 36;
+  --color-danger: 254 202 202;
+  --color-textPrimary: 249 250 251;
+  --color-textSecondary: 156 163 175;
+  --color-border: 38 41 45;
 }
 
 @layer base {
