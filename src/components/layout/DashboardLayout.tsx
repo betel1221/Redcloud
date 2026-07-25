@@ -9,6 +9,7 @@ import { ShieldAlert } from 'lucide-react';
 export default function DashboardLayout() {
   const { isAuthenticated, role } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   
   const enforce2fa = localStorage.getItem('eraop_enforce_2fa') === 'true';
   const show2faWarning = enforce2fa && role !== 'superadmin';
@@ -30,19 +31,23 @@ export default function DashboardLayout() {
       )}
 
       <Sidebar 
-        isCollapsed={false} 
+        isCollapsed={isDesktopSidebarCollapsed} 
         isOpen={isMobileMenuOpen} 
         onClose={() => setIsMobileMenuOpen(false)} 
       />
       
-      <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 md:ml-64 w-full`}>
+      <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${isDesktopSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} w-full`}>
         {show2faWarning && (
           <div className="bg-warning text-warning-foreground px-4 py-2 flex items-center justify-center text-sm font-medium animate-slide-up z-50">
             <ShieldAlert className="w-4 h-4 mr-2" />
             Superadmin requires you to set up Two-Factor Authentication (2FA). Please go to your Profile to configure it.
           </div>
         )}
-        <Header onMenuToggle={() => setIsMobileMenuOpen(true)} />
+        <Header 
+          onMenuToggle={() => setIsMobileMenuOpen(true)} 
+          isCollapsed={isDesktopSidebarCollapsed}
+          onDesktopToggle={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+        />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-background w-full">
           <Outlet />
         </main>

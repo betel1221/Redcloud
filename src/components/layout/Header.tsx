@@ -6,9 +6,11 @@ import { useTheme } from '../../context/ThemeContext';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
+  isCollapsed?: boolean;
+  onDesktopToggle?: () => void;
 }
 
-export default function Header({ onMenuToggle }: HeaderProps) {
+export default function Header({ onMenuToggle, isCollapsed, onDesktopToggle }: HeaderProps) {
   const { userEmail, logout, role } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -61,6 +63,16 @@ export default function Header({ onMenuToggle }: HeaderProps) {
             onClick={onMenuToggle}
             className="md:hidden p-2 text-textSecondary hover:text-textPrimary transition-colors rounded-lg hover:bg-surfaceHover"
             title="Open Menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        )}
+
+        {onDesktopToggle && (
+          <button 
+            onClick={onDesktopToggle}
+            className="hidden md:block p-2 text-textSecondary hover:text-textPrimary transition-colors rounded-lg hover:bg-surfaceHover"
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             <Menu className="h-5 w-5" />
           </button>
