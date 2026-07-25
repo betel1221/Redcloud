@@ -180,10 +180,9 @@ export default function Header({ onMenuToggle, isCollapsed, onDesktopToggle }: H
         </div>
         
         <div className="flex items-center space-x-2 md:space-x-3 border-l border-border pl-3 md:pl-4">
-          <div className="flex flex-col text-right hidden sm:block">
-            <span className="text-sm font-medium text-textPrimary">{userEmail || 'Admin'}</span>
-            <span className="text-xs text-textSecondary">
-              {role === 'superadmin' ? 'Super Administrator' : 'System Administrator'}
+          <div className="flex flex-col justify-center text-right hidden sm:block">
+            <span className="text-sm font-medium text-textPrimary">
+              {userEmail ? userEmail.split('@')[0].split('.')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].split('.')[0].slice(1) : 'Admin'}
             </span>
           </div>
           <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-bold">
