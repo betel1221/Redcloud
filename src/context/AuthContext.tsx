@@ -64,7 +64,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const savedUsers = localStorage.getItem('eraop_users');
     if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
+      const parsedUsers: UserAccount[] = JSON.parse(savedUsers);
+      // Deduplicate by keeping the latest occurrence
+      const uniqueUsers = parsedUsers.reduce((acc: UserAccount[], user) => {
+        const existingIdx = acc.findIndex(u => u.email.toLowerCase() === user.email.toLowerCase());
+        if (existingIdx >= 0) {
+          acc[existingIdx] = user;
+        } else {
+          acc.push(user);
+        }
+        return acc;
+      }, []);
+      setUsers(uniqueUsers);
+      localStorage.setItem('eraop_users', JSON.stringify(uniqueUsers));
     } else {
       localStorage.setItem('eraop_users', JSON.stringify([{ email: 'superadmin@company.com', role: 'superadmin', password: 'admin', needsPasswordChange: false }]));
     }
@@ -128,7 +140,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addUser = (email: string, role: 'admin'|'superadmin', pass: string) => {
-    const newUsers = [...users, { email, role, password: pass, needsPasswordChange: true }];
+    let newUsers: UserAccount[];
+    const existingIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    
+    if (existingIndex >= 0) {
+      newUsers = [...users];
+      newUsers[existingIndex] = { ...newUsers[existingIndex], role, password: pass, needsPasswordChange: true };
+    } else {
+      newUsers = [...users, { email, role, password: pass, needsPasswordChange: true }];
+    }
+    
     setUsers(newUsers);
     localStorage.setItem('eraop_users', JSON.stringify(newUsers));
   };
