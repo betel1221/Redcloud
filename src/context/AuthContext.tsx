@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check mock users DB if not superadmin
     if (email !== 'superadmin@company.com') {
-      const existingUser = users.find(u => u.email === email);
+      const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existingUser) {
         if (password && existingUser.password && existingUser.password !== password) {
           throw new Error('Invalid credentials');

@@ -18,7 +18,6 @@ export default function AuditLog() {
   const [auditLogs, setAuditLogs] = useState(mockAuditLogs);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [approvedCredentials, setApprovedCredentials] = useState(null);
-  const [requireApproval, setRequireApproval] = useState(true);
   
   // Create Admin state
   const [firstName, setFirstName] = useState('');
@@ -78,34 +77,20 @@ export default function AuditLog() {
       email: generatedEmail,
       password: randomPass
     };
-    if (requireApproval) {
-      // Log the creation request as pending
-      const log = {
-        id: Date.now(),
-        action: 'Admin Account Creation Requested',
-        user: generatedEmail,
-        time: 'Just now',
-        status: 'Pending',
-        ip: '127.0.0.1',
-        browser: 'Current Session'
-      };
-      setAuditLogs(prev => [log, ...prev]);
-      setPendingRequests(prev => [request, ...prev]);
-      setCreatedCredentials({ email: generatedEmail, password: randomPass });
-    } else {
-      addUser(generatedEmail, 'admin', randomPass);
-      const log = {
-        id: Date.now(),
-        action: 'Admin Account Created (Auto-Approved)',
-        user: generatedEmail,
-        time: 'Just now',
-        status: 'Success',
-        ip: '127.0.0.1',
-        browser: 'Current Session'
-      };
-      setAuditLogs(prev => [log, ...prev]);
-      setCreatedCredentials({ email: generatedEmail, password: randomPass });
-    }
+
+    addUser(generatedEmail, 'admin', randomPass);
+    const log = {
+      id: Date.now(),
+      action: 'Admin Account Created',
+      user: generatedEmail,
+      time: 'Just now',
+      status: 'Success',
+      ip: '127.0.0.1',
+      browser: 'Current Session'
+    };
+    setAuditLogs(prev => [log, ...prev]);
+    setCreatedCredentials({ email: generatedEmail, password: randomPass });
+    
     setIsCreating(false);
     // Reset form fields
     setFirstName('');
@@ -295,17 +280,7 @@ export default function AuditLog() {
                 />
               </div>
 
-              <div className="flex items-center mt-2 p-3 bg-surfaceHover border border-border rounded-lg">
-                <label className="flex items-center space-x-2 text-sm font-medium text-textPrimary cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={requireApproval}
-                    onChange={e => setRequireApproval(e.target.checked)}
-                    className="form-checkbox h-4 w-4 text-primary border-border rounded"
-                  />
-                  <span>Require Superadmin Approval</span>
-                </label>
-              </div>
+
 
               <button 
                 type="submit"

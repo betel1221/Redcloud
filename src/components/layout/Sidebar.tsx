@@ -21,8 +21,7 @@ const navItems = [
   { name: 'Database Monitoring', path: '/dashboard/database', icon: Database },
   { name: 'Server Monitoring', path: '/dashboard/server', icon: Server },
   { name: 'Security Monitoring', path: '/dashboard/security', icon: ShieldAlert },
-  { name: 'Database AI', path: '/dashboard/ai/database', icon: Bot },
-  { name: 'Server & Security AI', path: '/dashboard/ai/infrastructure', icon: Bot },
+  { name: 'AI Assistant', path: '/dashboard/ai', icon: Bot },
   { name: 'Alerts', path: '/dashboard/alerts', icon: Bell },
 ];
 

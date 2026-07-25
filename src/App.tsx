@@ -12,8 +12,7 @@ import ServerMonitoring from './pages/Dashboard/ServerMonitoring';
 import SecurityMonitoring from './pages/Dashboard/SecurityMonitoring';
 import Alerts from './pages/Dashboard/Alerts';
 import Profile from './pages/Dashboard/Profile';
-import DatabaseAIAssistant from './pages/Dashboard/DatabaseAIAssistant';
-import InfrastructureAIAssistant from './pages/Dashboard/InfrastructureAIAssistant';
+import AIAssistant from './pages/Dashboard/AIAssistant';
 import AuditLog from './pages/Dashboard/AuditLog';
 
 import Landing from './pages/Landing';
@@ -35,8 +34,7 @@ function App() {
               <Route path="security" element={<SecurityMonitoring />} />
               <Route path="alerts" element={<Alerts />} />
               <Route path="profile" element={<Profile />} />
-              <Route path="ai/database" element={<DatabaseAIAssistant />} />
-              <Route path="ai/infrastructure" element={<InfrastructureAIAssistant />} />
+              <Route path="ai" element={<AIAssistant />} />
               <Route path="audit" element={<AuditLog />} />
             </Route>
           </Routes>
