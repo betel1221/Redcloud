@@ -85,23 +85,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password?: string) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     
-    // Quick bypass for dev
-    let userRole: 'admin'|'superadmin' = (email === 'superadmin@company.com') ? 'superadmin' : 'admin';
+    let userRole: 'admin' | 'superadmin' = (email === 'superadmin@company.com') ? 'superadmin' : 'admin';
     let needsChange = false;
+    let authSuccess = false;
 
-    // Check mock users DB if not superadmin
-    if (email !== 'superadmin@company.com') {
-      const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (existingUser) {
-        if (password && existingUser.password && existingUser.password !== password) {
-          throw new Error('Invalid credentials');
+    // Try n8n backend PostgreSQL Auth Webhook
+    try {
+      const res = await fetch('/webhook/erp-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'login', email, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          userRole = data.user.role || userRole;
+          needsChange = !!data.user.needs_password_change;
+          authSuccess = true;
+        } else if (data.message) {
+          throw new Error(data.message);
         }
-        userRole = existingUser.role;
-        needsChange = existingUser.needsPasswordChange || false;
-      } else {
-        throw new Error('User not found. Ask Superadmin to create your account.');
+      }
+    } catch (err: any) {
+      if (err.message === 'Invalid credentials' || err.message === 'User not found. Ask Superadmin to create your account.') {
+        throw err;
+      }
+      console.warn("n8n auth webhook unreachable, using dynamic local database fallback:", err);
+    }
+
+    // Local fallback check if n8n was offline
+    if (!authSuccess) {
+      if (email !== 'superadmin@company.com') {
+        const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (existingUser) {
+          if (password && existingUser.password && existingUser.password !== password) {
+            throw new Error('Invalid credentials');
+          }
+          userRole = existingUser.role;
+          needsChange = existingUser.needsPasswordChange || false;
+        } else {
+          throw new Error('User not found. Ask Superadmin to create your account.');
+        }
       }
     }
     
@@ -139,7 +165,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('eraop_auth');
   };
 
-  const addUser = (email: string, role: 'admin'|'superadmin', pass: string) => {
+  const addUser = async (email: string, role: 'admin'|'superadmin', pass: string) => {
+    // Sync with n8n backend PostgreSQL DB
+    try {
+      await fetch('/webhook/erp-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'create_user', email, role, password: pass })
+      });
+    } catch (err) {
+      console.warn("n8n user creation webhook unreachable, writing to local storage state:", err);
+    }
+
     let newUsers: UserAccount[];
     const existingIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
     

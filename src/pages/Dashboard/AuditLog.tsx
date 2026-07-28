@@ -3,19 +3,11 @@ import { Shield, Key, Search, FileText, CheckCircle, Loader2, UserCog, Clock } f
 import { useAuth } from '../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
-const mockAuditLogs = [
-  { id: 1, action: 'Password Changed', user: 'admin@company.com', time: '10 mins ago', status: 'Success', ip: '192.168.1.5', browser: 'Chrome / Windows' },
-  { id: 2, action: 'Login Attempt', user: 'unknown', time: '25 mins ago', status: 'Failed', ip: '203.0.113.45', browser: 'Firefox / Linux' },
-  { id: 3, action: 'Server Restarted', user: 'admin@company.com', time: '1 hour ago', status: 'Success', ip: '192.168.1.5', browser: 'Chrome / Windows' },
-  { id: 4, action: 'Database Backup', user: 'system', time: '5 hours ago', status: 'Success', ip: 'Internal', browser: 'Cron' },
-  { id: 5, action: 'Role Updated', user: 'superadmin@company.com', time: '1 day ago', status: 'Success', ip: '10.0.0.2', browser: 'Safari / macOS' },
-];
-
 export default function AuditLog() {
   const { role, users, addUser, updateUserPassword } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState('All');
-  const [auditLogs, setAuditLogs] = useState(mockAuditLogs);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [approvedCredentials, setApprovedCredentials] = useState(null);
   

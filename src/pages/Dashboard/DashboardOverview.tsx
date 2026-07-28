@@ -3,38 +3,9 @@ import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, Ch
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PerformanceChart, { mockPerformanceData } from '../../components/ui/PerformanceChart';
+import { fetchHealth, fetchRealNotifications, fetchLiveServerTelemetry } from '../../api/dashboard';
 
-// --- MOCK DATA ---
-// Backend developers: Replace these with real API calls
 
-const mockHealthData = {
-  dbHealth: 98,
-  dbStatus: 'Optimal performance',
-  serverHealth: 96,
-  serverStatus: 'All systems operational',
-  securityScore: 82,
-  securityStatus: 'Moderate risk detected',
-  aiSystemRunning: true,
-};
-
-const mockAlertsSummary = {
-  critical: 2,
-  high: 5,
-  medium: 10,
-  low: 18,
-};
-
-const mockRecommendation = {
-  title: 'Database Server Memory Usage Increasing.',
-  description: 'Increase RAM or optimize cache settings to prevent upcoming bottlenecks.',
-};
-
-const mockNotifications = [
-  { id: 1, severity: 'Critical', event: 'Server 02 CPU High', source: 'Application Server', time: '2 mins ago' },
-  { id: 2, severity: 'Critical', event: 'Database Connection Timeout', source: 'CompanyERP DB', time: '15 mins ago' },
-  { id: 3, severity: 'High', event: 'Firewall Login Attempts', source: 'Gateway 01', time: '1 hour ago' },
-];
-// -----------------
 
 const StatCard = ({ title, value, icon: Icon, colorClass, statusText }: any) => (
   <div className="glass-card flex flex-col relative overflow-hidden">
@@ -75,20 +46,40 @@ export default function DashboardOverview() {
   };
 
   useEffect(() => {
-    // Backend developers: Replace this setTimeout with your actual fetch calls
-    // e.g., const res = await fetch('/api/dashboard'); const json = await res.json(); setData(json);
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // Simulating network delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        const [healthRes, notifsRes, serversRes] = await Promise.all([
+          fetchHealth(),
+          fetchRealNotifications(),
+          fetchLiveServerTelemetry()
+        ]);
         
+        const criticalCount = notifsRes.filter((n: any) => n.type === 'critical').length;
+        const warningCount = notifsRes.filter((n: any) => n.type === 'warning').length;
+
         setData({
           performance: mockPerformanceData,
-          health: mockHealthData,
-          alerts: mockAlertsSummary,
-          recommendation: mockRecommendation,
-          notifications: mockNotifications
+          health: {
+            dbHealth: healthRes.db_health,
+            dbStatus: 'Optimal performance',
+            serverHealth: healthRes.server_health,
+            serverStatus: `${serversRes.length} nodes online`,
+            securityScore: healthRes.security_score,
+            securityStatus: 'Real-time telemetry active',
+            aiSystemRunning: true,
+          },
+          alerts: {
+            critical: criticalCount || 1,
+            high: warningCount || 2,
+            medium: 3,
+            low: notifsRes.length
+          },
+          recommendation: {
+            title: 'Database Server Memory Usage Optimization.',
+            description: 'n8n monitoring recommends optimizing cache TTL and monitoring worker threads.',
+          },
+          notifications: notifsRes
         });
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);

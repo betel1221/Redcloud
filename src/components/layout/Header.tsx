@@ -4,6 +4,8 @@ import { Search, Bell, User, LogOut, CheckCircle, AlertTriangle, AlertCircle, Mo
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
+import { fetchRealNotifications, type NotificationItem } from '../../api/dashboard';
+
 interface HeaderProps {
   onMenuToggle?: () => void;
   isCollapsed?: boolean;
@@ -15,10 +17,15 @@ export default function Header({ onMenuToggle, isCollapsed, onDesktopToggle }: H
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchRealNotifications().then(data => setNotifications(data));
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -49,11 +56,7 @@ export default function Header({ onMenuToggle, isCollapsed, onDesktopToggle }: H
     item.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const mockNotifications = [
-    { id: 1, type: 'critical', title: 'Server 02 CPU Spike', time: '2 mins ago', icon: AlertCircle },
-    { id: 2, type: 'warning', title: 'Firewall Login Attempts', time: '1 hour ago', icon: AlertTriangle },
-    { id: 3, type: 'success', title: 'Daily Backup Completed', time: '3 hours ago', icon: CheckCircle },
-  ];
+
 
   return (
     <header className="h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 w-full">
@@ -147,21 +150,21 @@ export default function Header({ onMenuToggle, isCollapsed, onDesktopToggle }: H
             <div className="absolute right-0 mt-2 w-80 bg-surface border border-border rounded-xl shadow-lg z-50 overflow-hidden animate-fade-in">
               <div className="p-4 border-b border-border bg-background flex justify-between items-center">
                 <h3 className="font-bold text-textPrimary text-sm">Notifications</h3>
-                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">3 New</span>
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{notifications.length} Live</span>
               </div>
               <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                {mockNotifications.map(notif => (
+                {notifications.map(notif => (
                   <div key={notif.id} className="p-4 border-b border-border hover:bg-surfaceHover/50 transition-colors cursor-pointer flex items-start">
                     <div className={`mt-0.5 mr-3 flex-shrink-0 p-1.5 rounded-full ${
                       notif.type === 'critical' ? 'bg-danger/10 text-danger' :
                       notif.type === 'warning' ? 'bg-warning/10 text-warning' :
                       'bg-success/10 text-success'
                     }`}>
-                      <notif.icon className="w-4 h-4" />
+                      {notif.type === 'critical' ? <AlertCircle className="w-4 h-4" /> : notif.type === 'warning' ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-textPrimary">{notif.title}</p>
-                      <p className="text-xs text-textSecondary mt-1">{notif.time}</p>
+                      <p className="text-xs text-textSecondary mt-1">{notif.timestamp}</p>
                     </div>
                   </div>
                 ))}

@@ -1,21 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Search, Filter, AlertTriangle, AlertCircle, CheckCircle, ChevronDown, X, Info, Clock, Server, FileText } from 'lucide-react';
-
-const initialAlerts = [
-  { id: 1, type: 'critical', message: 'CPU utilization on App Server 01 exceeded 90%', source: 'Server Monitoring', time: '10 mins ago', status: 'Open', mitigation: 'Check process list and increase worker capacity.', affected: 'App Server 01, Load Balancer' },
-  { id: 2, type: 'critical', message: 'Multiple failed login attempts from IP 192.168.1.50', source: 'Security', time: '25 mins ago', status: 'Investigating', mitigation: 'IP has been temporarily blocked. Review firewall rules.', affected: 'Gateway Auth' },
-  { id: 3, type: 'warning', message: 'Database connection pool near capacity (85%)', source: 'Database Monitoring', time: '1 hour ago', status: 'Open', mitigation: 'Increase connection pool size in Prisma configuration.', affected: 'FinanceDB' },
-  { id: 4, type: 'warning', message: 'High memory usage on Worker Node B', source: 'Server Monitoring', time: '2 hours ago', status: 'Resolved', mitigation: 'Restarted Node B.', affected: 'Worker Node B' },
-  { id: 5, type: 'info', message: 'Automated backup completed successfully', source: 'System', time: '5 hours ago', status: 'Resolved', mitigation: 'None required.', affected: 'All Databases' },
-  { id: 6, type: 'info', message: 'New Redhelp agent version available (v2.4)', source: 'System', time: '1 day ago', status: 'Open', mitigation: 'Schedule update during maintenance window.', affected: 'Agent Deployment' },
-];
+import { fetchRealNotifications, type NotificationItem } from '../../api/dashboard';
 
 export default function Alerts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
+  const [alertsList, setAlertsList] = useState<any[]>([]);
 
-  const filteredAlerts = initialAlerts.filter(alert => {
+  useEffect(() => {
+    fetchRealNotifications().then((data: NotificationItem[]) => {
+      const formatted = data.map(item => ({
+        id: item.id,
+        type: item.type || 'info',
+        message: `${item.title}: ${item.message || ''}`,
+        source: item.title?.includes('Server') ? 'Server Monitoring' : item.title?.includes('Firewall') ? 'Security' : 'System',
+        time: item.timestamp,
+        status: 'Open',
+        mitigation: 'Check system health telemetry.',
+        affected: 'Primary ERP Infrastructure'
+      }));
+      setAlertsList(formatted);
+    });
+  }, []);
+
+  const filteredAlerts = alertsList.filter(alert => {
     const matchesSearch = alert.message.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           alert.source.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filter === 'all' || alert.type === filter;

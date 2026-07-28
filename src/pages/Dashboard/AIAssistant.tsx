@@ -7,15 +7,7 @@ export default function AIAssistant() {
 
   return (
     <div className="h-full flex flex-col space-y-4 animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-textPrimary flex items-center">
-            <Bot className="w-6 h-6 mr-3 text-primary" />
-            AI Assistant
-          </h1>
-          <p className="text-textSecondary mt-1">Chat with specialized AI models for your operations.</p>
-        </div>
-
+      <div className="flex flex-col md:flex-row justify-end items-start md:items-center">
         <div className="mt-4 md:mt-0 bg-surface border border-border rounded-lg p-1 flex items-center">
           <button
             onClick={() => setDomain('database')}
