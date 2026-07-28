@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import MobileNavigation from './MobileNavigation';
 import { useAuth } from '../../context/AuthContext';
 import ForcePasswordChangeModal from '../ui/ForcePasswordChangeModal';
 import { ShieldAlert } from 'lucide-react';
@@ -54,9 +55,10 @@ export default function DashboardLayout() {
             onDesktopToggle={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
           />
         )}
-        <main className={`flex-1 overflow-y-auto ${isTelegram ? 'p-2' : 'p-4 md:p-6'} custom-scrollbar bg-background w-full`}>
+        <main className={`flex-1 overflow-y-auto ${isTelegram ? 'p-2 pb-20' : 'p-4 md:p-6'} custom-scrollbar bg-background w-full`}>
           <Outlet />
         </main>
+        {isTelegram && <MobileNavigation />}
       </div>
     </div>
   );
