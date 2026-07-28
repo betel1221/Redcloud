@@ -5,9 +5,11 @@ import Header from './Header';
 import { useAuth } from '../../context/AuthContext';
 import ForcePasswordChangeModal from '../ui/ForcePasswordChangeModal';
 import { ShieldAlert } from 'lucide-react';
+import { useTelegram } from '../../context/TelegramContext';
 
 export default function DashboardLayout() {
   const { isAuthenticated, role } = useAuth();
+  const { isTelegram } = useTelegram();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   
@@ -30,25 +32,29 @@ export default function DashboardLayout() {
         />
       )}
 
-      <Sidebar 
-        isCollapsed={isDesktopSidebarCollapsed} 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)} 
-      />
+      {!isTelegram && (
+        <Sidebar 
+          isCollapsed={isDesktopSidebarCollapsed} 
+          isOpen={isMobileMenuOpen} 
+          onClose={() => setIsMobileMenuOpen(false)} 
+        />
+      )}
       
-      <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${isDesktopSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} w-full`}>
+      <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${isTelegram ? 'md:ml-0' : (isDesktopSidebarCollapsed ? 'md:ml-16' : 'md:ml-64')} w-full`}>
         {show2faWarning && (
           <div className="bg-warning text-warning-foreground px-4 py-2 flex items-center justify-center text-sm font-medium animate-slide-up z-50">
             <ShieldAlert className="w-4 h-4 mr-2" />
             Superadmin requires you to set up Two-Factor Authentication (2FA). Please go to your Profile to configure it.
           </div>
         )}
-        <Header 
-          onMenuToggle={() => setIsMobileMenuOpen(true)} 
-          isCollapsed={isDesktopSidebarCollapsed}
-          onDesktopToggle={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
-        />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-background w-full">
+        {!isTelegram && (
+          <Header 
+            onMenuToggle={() => setIsMobileMenuOpen(true)} 
+            isCollapsed={isDesktopSidebarCollapsed}
+            onDesktopToggle={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+          />
+        )}
+        <main className={`flex-1 overflow-y-auto ${isTelegram ? 'p-2' : 'p-4 md:p-6'} custom-scrollbar bg-background w-full`}>
           <Outlet />
         </main>
       </div>
