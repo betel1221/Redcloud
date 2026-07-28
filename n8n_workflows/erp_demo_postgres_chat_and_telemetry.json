@@ -1,0 +1,396 @@
+{
+  "name": "Redcloud ERP - Postgres (erp_demo) Chat Persistence & Telemetry Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-history",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Chat History Webhook (/webhook/chat-history)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        624,
+        864
+      ],
+      "id": "100e67af-3093-41ea-80e5-a76d13369ae5",
+      "webhookId": "07bedf02-d78b-40ce-b68f-5fa870ca84d0"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.operation || $json.query.operation || 'get_history' }}",
+                    "rightValue": "get_history",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "fed0e6d4-dc0e-489b-936e-db875f29138a"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "dca988e6-d1eb-489d-ba71-e197db555842",
+                    "leftValue": "={{ $json.body.operation || $json.query.operation }}",
+                    "rightValue": "save_session",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "0d1f7154-8c77-445a-a0cc-f3641a3ec4af",
+                    "leftValue": "={{ $json.body.operation || $json.query.operation }}",
+                    "rightValue": "save_message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "7d23079e-b3ce-487f-b538-374837a7e7a0",
+                    "leftValue": "={{ $json.body.operation || $json.query.operation }}",
+                    "rightValue": "get_telemetry",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "675f2d40-efec-4cdd-a6eb-eb84bc9d7745",
+                    "leftValue": "={{ $json.body.operation || $json.query.operation }}",
+                    "rightValue": "get_db_metadata",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Route Operation",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        832,
+        864
+      ],
+      "id": "86377a44-84b1-4fda-9a9c-ca12935d35d7"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT s.id, s.domain, s.title, s.is_pinned, s.updated_at,\n       COALESCE(json_agg(json_build_object('id', m.id, 'session_id', m.session_id, 'sender', m.sender, 'text', m.text, 'timestamp', m.timestamp) ORDER BY m.id ASC) FILTER (WHERE m.id IS NOT NULL), '[]'::json) AS messages\nFROM chat_sessions s\nLEFT JOIN chat_messages m ON s.id = m.session_id\nWHERE s.domain = '{{ $json.body.domain || $json.query.domain || \"database\" }}'\nGROUP BY s.id, s.domain, s.title, s.is_pinned, s.updated_at\nORDER BY s.updated_at DESC;",
+        "additionalFields": {}
+      },
+      "name": "Postgres Load Chat History (erp_demo)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        576
+      ],
+      "id": "23e46ab6-3cf8-4f31-ab25-2971183531c4",
+      "credentials": {
+        "postgres": {
+          "id": "8iTlMr0iXe0MIskR",
+          "name": "Postgres account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_sessions (id, domain, title, is_pinned, updated_at)\nVALUES (\n  '{{ $json.body.session_id || $json.body.id }}',\n  '{{ $json.body.domain || \"database\" }}',\n  '{{ ($json.body.title || \"New Chat\").replace(/'/g, \"''\") }}',\n  {{ $json.body.is_pinned ? true : false }},\n  NOW()\n)\nON CONFLICT (id) DO UPDATE SET\n  title = EXCLUDED.title,\n  is_pinned = EXCLUDED.is_pinned,\n  updated_at = NOW()\nRETURNING id, 'Session saved successfully' AS status;",
+        "additionalFields": {}
+      },
+      "name": "Postgres Save Session (erp_demo)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        720
+      ],
+      "id": "9629774b-f0e1-480c-9ef1-407c300970d2",
+      "credentials": {
+        "postgres": {
+          "id": "8iTlMr0iXe0MIskR",
+          "name": "Postgres account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_messages (id, session_id, sender, text, message, timestamp)\nVALUES (\n  {{ $json.body.message.id }},\n  '{{ $json.body.session_id }}',\n  '{{ $json.body.message.sender }}',\n  '{{ ($json.body.message.text || \"\").replace(/'/g, \"''\") }}',\n  '{{ ($json.body.message.text || \"\").replace(/'/g, \"''\") }}',\n  '{{ $json.body.message.timestamp }}'\n)\nON CONFLICT (id) DO UPDATE SET \n  text = EXCLUDED.text,\n  message = EXCLUDED.message\nRETURNING id, 'Message saved' AS status;\n",
+        "additionalFields": {}
+      },
+      "name": "Postgres Save Message (erp_demo)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        864
+      ],
+      "id": "80872eda-594c-4ed9-9f26-d9026a3ba06f",
+      "credentials": {
+        "postgres": {
+          "id": "8iTlMr0iXe0MIskR",
+          "name": "Postgres account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT server_name, status, cpu_usage, memory_usage, disk_usage, network_speed, temperature_c, running_services, uptime \nFROM server_metrics \nORDER BY id DESC;",
+        "additionalFields": {}
+      },
+      "name": "Postgres Get Telemetry (erp_demo)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        1008
+      ],
+      "id": "5302b9f8-b13b-4a3a-acd6-6ea646dde5b2",
+      "credentials": {
+        "postgres": {
+          "id": "8iTlMr0iXe0MIskR",
+          "name": "Postgres account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT d.datname AS name,\n  'PostgreSQL 15' AS type,\n  CASE WHEN d.datistemplate THEN 'Template' ELSE 'Online & Active' END AS status,\n  pg_size_pretty(pg_database_size(d.datname)) AS storage,\n  (SELECT COUNT(*) FROM information_schema.tables WHERE table_catalog = d.datname AND table_schema NOT IN ('pg_catalog','information_schema'))::int AS tables,\n  (SELECT count(*) FROM pg_stat_activity WHERE datname = d.datname)::text || ' / ' || current_setting('max_connections') AS connections,\n  CASE WHEN (SELECT count(*) FROM pg_stat_replication) > 0 THEN 'Streaming' ELSE 'Standalone' END AS replication,\n  COALESCE((SELECT pg_size_pretty(pg_database_size(d.datname))), '—') AS backup\nFROM pg_database d\nWHERE d.datname IN ('erp_demo', 'server_metrics', 'FOODAPPANDDB')\nORDER BY d.datname;",
+        "additionalFields": {}
+      },
+      "name": "Postgres Get DB Metadata",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        1232
+      ],
+      "id": "af60e8f9-2957-4c3b-9a83-4e3450813740",
+      "credentials": {
+        "postgres": {
+          "id": "8iTlMr0iXe0MIskR",
+          "name": "Postgres account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1552,
+        864
+      ],
+      "id": "d6c6e66b-6275-4af8-98fa-52a1e3f5aa2d"
+    }
+  ],
+  "connections": {
+    "Chat History Webhook (/webhook/chat-history)": {
+      "main": [
+        [
+          {
+            "node": "Route Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Operation": {
+      "main": [
+        [
+          {
+            "node": "Postgres Load Chat History (erp_demo)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Save Session (erp_demo)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Save Message (erp_demo)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Get Telemetry (erp_demo)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Get DB Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Load Chat History (erp_demo)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Save Session (erp_demo)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Save Message (erp_demo)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Get Telemetry (erp_demo)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Get DB Metadata": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "578d3c1db5ca3dfeae4321cd5f6ee21db1269db0a5de87c2d8d50ec3cd51efbf"
+  }
+}
