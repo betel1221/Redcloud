@@ -61,7 +61,7 @@
       "id": "postgres-get-telemetry-id",
       "name": "Postgres Get Telemetry",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         300,
         410
@@ -80,7 +80,7 @@
       "id": "postgres-get-security-id",
       "name": "Postgres Get Security",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         300,
         540
@@ -173,7 +173,7 @@
       "id": "postgres-save-assistant-msg-id",
       "name": "Postgres Save Assistant Message",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         1350,
         400

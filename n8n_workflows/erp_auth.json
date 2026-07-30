@@ -82,7 +82,7 @@
       "id": "db-login-query-id",
       "name": "Postgres Login Query",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         700,
         150
@@ -114,7 +114,7 @@
       "id": "db-create-user-id",
       "name": "Postgres Create User",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         700,
         280
@@ -146,7 +146,7 @@
       "id": "db-update-avatar-id",
       "name": "Postgres Update Avatar",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         700,
         410
@@ -165,7 +165,7 @@
       "id": "db-update-pass-id",
       "name": "Postgres Update Password",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         700,
         540
@@ -184,7 +184,7 @@
       "id": "db-list-users-id",
       "name": "Postgres List Users",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         700,
         670
@@ -203,7 +203,7 @@
       "id": "db-backup-db-id",
       "name": "Postgres Emergency Backup",
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1.1,
+      "typeVersion": 1,
       "position": [
         700,
         800
