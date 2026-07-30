@@ -177,7 +177,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO security_metrics (\n    id, server_name, timestamp,\n    failed_logins, successful_logins, firewall_events,\n    blocked_ips, suspicious_users, security_alerts,\n    threat_level, authentication_activity, risk_score\n) VALUES (\n    '{{ $('Process Zabbix Metrics').item.json.id }}',\n    '{{ $('Process Zabbix Metrics').item.json.server_name }}',\n    '{{ $('Process Zabbix Metrics').item.json.timestamp }}',\n    {{ $('Process Zabbix Metrics').item.json.security.failed_logins }},\n    {{ $('Process Zabbix Metrics').item.json.security.successful_logins }},\n    {{ $('Process Zabbix Metrics').item.json.security.firewall_events }},\n    {{ $('Process Zabbix Metrics').item.json.security.blocked_ips }},\n    {{ $('Process Zabbix Metrics').item.json.security.suspicious_users }},\n    {{ $('Process Zabbix Metrics').item.json.security.security_alerts }},\n    '{{ $('Process Zabbix Metrics').item.json.security.threat_level }}',\n    {{ $('Process Zabbix Metrics').item.json.security.authentication_activity }},\n    {{ $('Process Zabbix Metrics').item.json.security.risk_score }}\n) ON CONFLICT (id) DO NOTHING;",
+        "query": "INSERT INTO security_metrics (\n    id, server_name, timestamp,\n    failed_logins, successful_logins, firewall_events,\n    blocked_ips, suspicious_users, security_alerts,\n    threat_level, authentication_activity, risk_score\n) VALUES (\n    '{{ $('Generate Server Telemetry').item.json.id }}',\n    '{{ $('Generate Server Telemetry').item.json.server_name }}',\n    '{{ $('Generate Server Telemetry').item.json.timestamp }}',\n    {{ $('Generate Server Telemetry').item.json.security.failed_logins }},\n    {{ $('Generate Server Telemetry').item.json.security.successful_logins }},\n    {{ $('Generate Server Telemetry').item.json.security.firewall_events }},\n    {{ $('Generate Server Telemetry').item.json.security.blocked_ips }},\n    {{ $('Generate Server Telemetry').item.json.security.suspicious_users }},\n    {{ $('Generate Server Telemetry').item.json.security.security_alerts }},\n    '{{ $('Generate Server Telemetry').item.json.security.threat_level }}',\n    {{ $('Generate Server Telemetry').item.json.security.authentication_activity }},\n    {{ $('Generate Server Telemetry').item.json.security.risk_score }}\n) ON CONFLICT (id) DO NOTHING;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -195,7 +195,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### LIVE SERVER METRICS (All Hosts \u2014 Health & Security)\n{{ JSON.stringify($('Process Zabbix Metrics').all().map(i => i.json), null, 2) }}\n\nYou are ServerGuard AI, an enterprise Server Monitoring and Security Assistant.\nProvide a complete health and security report for this server.\n\nCRITICAL FORMATTING RULES (you MUST follow these):\n- This output will be sent directly to Telegram.\n- Do NOT use markdown headers (no # or ## or ###).\n- Do NOT use markdown tables (no | pipes).\n- Do NOT use backticks or code blocks.\n- Do NOT use asterisks for bold.\n- Use ONLY plain text with emojis for formatting.\n- Use line breaks and emojis to create visual structure.\n\nYour responsibilities are:\n1. Answer ONLY using the retrieved monitoring data.\n2. Never invent, estimate, or assume metric values.\n3. If information is missing, say: \"Not available in current snapshot.\"\n4. Always use the latest monitoring snapshot.\n5. Never contradict retrieved values.\n\nUse this EXACT output structure:\n\n\ud83d\udcbb SERVER HEALTH REPORT\nOne or two sentence summary of overall server status.\n\n\ud83d\udcca CURRENT METRICS\n  \ud83d\udcbb Server: [name]\n  \ud83d\udce1 Status: [status] [emoji]\n  \u26a1 CPU: [value]% [emoji]\n  \ud83e\udde0 Memory: [value]% [emoji]\n  \ud83d\udcbe Disk: [value]% [emoji]\n  \ud83d\udd25 Temperature: [value]\u00b0C [emoji]\n  \u2699\ufe0f Services: [running] running, [failed] failed\n  \u23f1\ufe0f Uptime: [value]\n\n\ud83d\udee1\ufe0f SECURITY STATUS\n  \ud83d\udd10 Threat Level: [level] [emoji]\n  \ud83d\udcc8 Risk Score: [value] [emoji]\n  \ud83d\udeab Failed Logins: [value]\n  \u2705 Successful Logins: [value]\n  \ud83d\udd25 Firewall Events: [value]\n  \ud83d\udeb7 Blocked IPs: [value]\n  \u26a0\ufe0f Security Alerts: [value]\n\n\ud83d\udd0d ANALYSIS\nUse bullet points with emojis:\n  \u2705 or \u26a0\ufe0f or \u274c followed by plain text explanation.\n\n\ud83d\udca1 RECOMMENDATIONS\nNumbered list:\n  1. recommendation text\n  2. recommendation text\n  3. recommendation text\n\nStatus emoji rules:\n  0-60% = \u2705 Healthy\n  61-84% = \u26a0\ufe0f Warning  \n  85%+ = \u274c Critical\n  Threat LOW = \u2705, MEDIUM = \u26a0\ufe0f, HIGH/CRITICAL = \u274c"
+        "text": "=### LIVE SERVER METRICS (All Hosts \u2014 Health & Security)\n{{ JSON.stringify($('Generate Server Telemetry').all().map(i => i.json), null, 2) }}\n\nYou are ServerGuard AI, an enterprise Server Monitoring and Security Assistant.\nProvide a complete health and security report for this server.\n\nCRITICAL FORMATTING RULES (you MUST follow these):\n- This output will be sent directly to Telegram.\n- Do NOT use markdown headers (no # or ## or ###).\n- Do NOT use markdown tables (no | pipes).\n- Do NOT use backticks or code blocks.\n- Do NOT use asterisks for bold.\n- Use ONLY plain text with emojis for formatting.\n- Use line breaks and emojis to create visual structure.\n\nYour responsibilities are:\n1. Answer ONLY using the retrieved monitoring data.\n2. Never invent, estimate, or assume metric values.\n3. If information is missing, say: \"Not available in current snapshot.\"\n4. Always use the latest monitoring snapshot.\n5. Never contradict retrieved values.\n\nUse this EXACT output structure:\n\n\ud83d\udcbb SERVER HEALTH REPORT\nOne or two sentence summary of overall server status.\n\n\ud83d\udcca CURRENT METRICS\n  \ud83d\udcbb Server: [name]\n  \ud83d\udce1 Status: [status] [emoji]\n  \u26a1 CPU: [value]% [emoji]\n  \ud83e\udde0 Memory: [value]% [emoji]\n  \ud83d\udcbe Disk: [value]% [emoji]\n  \ud83d\udd25 Temperature: [value]\u00b0C [emoji]\n  \u2699\ufe0f Services: [running] running, [failed] failed\n  \u23f1\ufe0f Uptime: [value]\n\n\ud83d\udee1\ufe0f SECURITY STATUS\n  \ud83d\udd10 Threat Level: [level] [emoji]\n  \ud83d\udcc8 Risk Score: [value] [emoji]\n  \ud83d\udeab Failed Logins: [value]\n  \u2705 Successful Logins: [value]\n  \ud83d\udd25 Firewall Events: [value]\n  \ud83d\udeb7 Blocked IPs: [value]\n  \u26a0\ufe0f Security Alerts: [value]\n\n\ud83d\udd0d ANALYSIS\nUse bullet points with emojis:\n  \u2705 or \u26a0\ufe0f or \u274c followed by plain text explanation.\n\n\ud83d\udca1 RECOMMENDATIONS\nNumbered list:\n  1. recommendation text\n  2. recommendation text\n  3. recommendation text\n\nStatus emoji rules:\n  0-60% = \u2705 Healthy\n  61-84% = \u26a0\ufe0f Warning  \n  85%+ = \u274c Critical\n  Threat LOW = \u2705, MEDIUM = \u26a0\ufe0f, HIGH/CRITICAL = \u274c"
       },
       "executeOnce": true,
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
@@ -222,36 +222,30 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.telegram.org/bot8706310122:AAFVtZJ7rCBoEAeBfp063ICeOrc1XSQdN44/sendMessage",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "chat_id",
-              "value": "7353246071"
-            },
-            {
-              "name": "text",
-              "value": "={{ $json.telegramText }}"
-            }
-          ]
-        },
-        "options": {}
+        "chatId": "7353246071",
+        "text": "={{ $json.telegramText }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
       "position": [
         1232,
         2160
       ],
       "id": "27606a19-65d9-458c-a4e8-202c09b37b73",
       "name": "Send Telegram Report",
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "const data = $('Process Zabbix Metrics').item.json;\nconst successLog = {\n  status: 'SUCCESS',\n  timestamp: new Date().toISOString(),\n  server: data.server_name || 'Unknown',\n  message: '\u2705 Metrics and Security data successfully stored and report sent',\n  details: {\n    id: data.id,\n    cpu_usage: data.cpu?.usage_percent,\n    memory_usage: data.memory?.usage_percent,\n    disk_usage: data.disk?.usage_percent,\n    threat_level: data.security?.threat_level,\n    risk_score: data.security?.risk_score\n  }\n};\nconsole.log('\u2705 [' + successLog.timestamp + '] ' + successLog.message + ' for ' + successLog.server);\nreturn [{ json: successLog }];"
+        "jsCode": "const data = $('Generate Server Telemetry').item.json;\nconst successLog = {\n  status: 'SUCCESS',\n  timestamp: new Date().toISOString(),\n  server: data.server_name || 'Unknown',\n  message: '\u2705 Metrics and Security data successfully stored and report sent',\n  details: {\n    id: data.id,\n    cpu_usage: data.cpu?.usage_percent,\n    memory_usage: data.memory?.usage_percent,\n    disk_usage: data.disk?.usage_percent,\n    threat_level: data.security?.threat_level,\n    risk_score: data.security?.risk_score\n  }\n};\nconsole.log('\u2705 [' + successLog.timestamp + '] ' + successLog.message + ' for ' + successLog.server);\nreturn [{ json: successLog }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -264,37 +258,31 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.telegram.org/bot8706310122:AAFVtZJ7rCBoEAeBfp063ICeOrc1XSQdN44/sendMessage",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "chat_id",
-              "value": "7353246071"
-            },
-            {
-              "name": "text",
-              "value": "=\ud83d\udea8 SRE Alert: Pipeline Failure\n\n\u23f0 Time: {{ new Date().toISOString() }}\n\ud83d\udcca Workflow: SRE Health & Security Pipeline\n\ud83d\udcbb Failed Node: {{ $('Error Trigger').item.json.node ? $('Error Trigger').item.json.node.name : 'Unknown' }}\n\u274c Error: {{ $('Error Trigger').item.json.error ? $('Error Trigger').item.json.error.message : ($('Error Trigger').item.json.message || 'Unknown Error') }}\n\n\ud83d\udd0d What to Check:\n\u2022 Zabbix API connection & credentials\n\u2022 PostgreSQL database connection\n\u2022 Network/Docker connectivity"
-            }
-          ]
-        },
-        "options": {}
+        "chatId": "7353246071",
+        "text": "=\ud83d\udea8 SRE Alert: Pipeline Failure\n\n\u23f0 Time: {{ new Date().toISOString() }}\n\ud83d\udcca Workflow: SRE Health & Security Pipeline\n\ud83d\udcbb Failed Node: {{ $('Error Trigger').item.json.node ? $('Error Trigger').item.json.node.name : 'Unknown' }}\n\u274c Error: {{ $('Error Trigger').item.json.error ? $('Error Trigger').item.json.error.message : ($('Error Trigger').item.json.message || 'Unknown Error') }}\n\n\ud83d\udd0d What to Check:\n\u2022 Zabbix API connection & credentials\n\u2022 PostgreSQL database connection\n\u2022 Network/Docker connectivity",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
       "position": [
         304,
         2448
       ],
       "id": "6ac5eb6f-00ab-4d14-9a1f-543fa6372b25",
       "name": "Send Telegram Alert",
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      }
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO error_logs (workflow, error_message, error_details, timestamp)\nVALUES (\n    'SRE Health & Security Pipeline',\n    '{{ $('Error Trigger').item.json.message || $('Error Trigger').item.json.error?.message || \"Unknown Error\" }}',\n    '{{ JSON.stringify($('Error Trigger').item.json).replace(/'/g, \"''\") }}',\n    NOW()\n);",
+        "query": "INSERT INTO error_logs (workflow, error_message, error_details, timestamp)\nVALUES (\n    'SRE Health & Security Pipeline',\n    '{{ ($(\"Error Trigger\").item.json.message || $(\"Error Trigger\").item.json.error?.message || \"Unknown Error\").replace(/'/g, \"''\").replace(/\\n/g, \" \") }}',\n    '{{ JSON.stringify($(\"Error Trigger\").item.json).replace(/'/g, \"''\") }}',\n    NOW()\n);",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
