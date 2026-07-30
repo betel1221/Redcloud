@@ -17,19 +17,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Handle CORS preflight requests\nconst method = $input.first().json.method || 'POST';\n\nif (method === 'OPTIONS') {\n  return [{ \n    json: { status: 'ok' },\n    headers: {\n      'Access-Control-Allow-Origin': '*',\n      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',\n      'Access-Control-Allow-Headers': 'Content-Type'\n    }\n  }];\n}\n\n// Pass through for normal requests\nreturn [{ json: $input.first().json }];\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        16720,
-        3168
-      ],
-      "id": "f6f39f3a-267e-4f09-a136-b1243d7bb098",
-      "name": "Handle CORS"
-    },
-    {
-      "parameters": {
         "httpMethod": "POST",
         "path": "erp-chat",
         "responseMode": "responseNode",
@@ -410,7 +397,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"answer\": \"{{ $json.text }}\"\n}",
+        "responseBody": "={\n  \"answer\": \"{{ $json.output || $json.text || $json.response }}\"\n}",
         "options": {}
       },
       "id": "bfff6e8c-1d70-4870-9c33-ae39dba6a158",
@@ -421,6 +408,40 @@
         1000,
         1000
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "needs-ai-check",
+              "leftValue": "={{ $json.needs_ai ? 'true' : 'false' }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        17900,
+        3168
+      ],
+      "id": "check-needs-ai-id",
+      "name": "Check Needs AI?"
     }
   ],
   "connections": {
@@ -435,22 +456,11 @@
         ]
       ]
     },
-    "Handle CORS": {
-      "main": [
-        [
-          {
-            "node": "Prepare Chat Input1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Chat Webhook1": {
       "main": [
         [
           {
-            "node": "Handle CORS",
+            "node": "Prepare Chat Input1",
             "type": "main",
             "index": 0
           }
@@ -483,7 +493,7 @@
       "main": [
         [
           {
-            "node": "Build Minimal Prompt",
+            "node": "Check Needs AI?",
             "type": "main",
             "index": 0
           }
@@ -639,6 +649,24 @@
           {
             "node": "DBA Chain",
             "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Needs AI?": {
+      "main": [
+        [
+          {
+            "node": "Build Minimal Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
             "index": 0
           }
         ]
