@@ -80,27 +80,59 @@
     {
       "parameters": {
         "chatId": "={{ $json.chat_id }}",
-        "text": "\ud83d\udc4b *Welcome to Redhelp System Monitor.*\n\nTo view protected system statistics, you must authorize your identity.\nTap the keyboard button below to launch the secure login interface:",
-        "replyMarkup": "replyKeyboard",
-        "replyKeyboardOptions": {
-          "replyKeyboard": {
-            "rows": [
-              {
-                "row": {
-                  "buttons": [
-                    {
-                      "text": "\ud83d\udd11 Launch Login Portal",
-                      "additionalFields": {
-                        "webApp": {
-                          "url": "https://betel1221.github.io/Redcloud/?v=7"
-                        }
+        "text": "\u26a1 *Connecting to Secure Portal...*",
+        "replyMarkup": "none",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "name": "Clear Welcome Keyboard",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        650,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "\u26a1 *Safely logging out...*",
+        "replyMarkup": "none",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "name": "Clear Logout Keyboard",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        650,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "\ud83d\udc4b *Welcome to Redhelp System Monitor.*\n\nTo view protected system statistics, you must authorize your identity.\nTap the button below to launch the secure login interface:",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "\ud83d\udd11 Launch Login Portal",
+                    "additionalFields": {
+                      "webApp": {
+                        "url": "https://betel1221.github.io/Redcloud/#/dashboard"
                       }
                     }
-                  ]
-                }
+                  }
+                ]
               }
-            ]
-          }
+            }
+          ]
         },
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -193,26 +225,24 @@
       "parameters": {
         "chatId": "={{ $json.chat_id }}",
         "text": "\ud83d\udd12 *You have logged out.*\nUse `/start` to log in again.",
-        "replyMarkup": "replyKeyboard",
-        "replyKeyboardOptions": {
-          "replyKeyboard": {
-            "rows": [
-              {
-                "row": {
-                  "buttons": [
-                    {
-                      "text": "\ud83d\udd11 Launch Login Portal",
-                      "additionalFields": {
-                        "webApp": {
-                          "url": "https://betel1221.github.io/Redcloud/?v=7"
-                        }
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "\ud83d\udd11 Launch Login Portal",
+                    "additionalFields": {
+                      "webApp": {
+                        "url": "https://betel1221.github.io/Redcloud/#/dashboard"
                       }
                     }
-                  ]
-                }
+                  }
+                ]
               }
-            ]
-          }
+            }
+          ]
         },
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -413,7 +443,8 @@
     },
     {
       "parameters": {
-        "operation": "answerCallbackQuery",
+        "resource": "callback",
+        "operation": "answer",
         "callbackQueryId": "={{ $('State Management & Routing').item.json.callback_query_id }}",
         "text": "Metrics fetched successfully.",
         "showAlert": false
@@ -454,7 +485,7 @@
       "main": [
         [
           {
-            "node": "Send Start Message",
+            "node": "Clear Welcome Keyboard",
             "type": "main",
             "index": 0
           }
@@ -475,7 +506,7 @@
         ],
         [
           {
-            "node": "Send Logout",
+            "node": "Clear Logout Keyboard",
             "type": "main",
             "index": 0
           }
@@ -504,6 +535,28 @@
         [
           {
             "node": "Fetch AI Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear Welcome Keyboard": {
+      "main": [
+        [
+          {
+            "node": "Send Start Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear Logout Keyboard": {
+      "main": [
+        [
+          {
+            "node": "Send Logout",
             "type": "main",
             "index": 0
           }
