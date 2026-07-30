@@ -156,7 +156,7 @@
         },
         "options": {}
       },
-      "name": "Route Operation",
+      "name": "Route Chat Operations",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
       "position": [
@@ -204,7 +204,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO chat_messages (id, session_id, sender, text, message, timestamp)\nVALUES (\n  {{ $json.body.message.id }},\n  '{{ $json.body.session_id }}',\n  '{{ $json.body.message.sender }}',\n  '{{ ($json.body.message.text || \"\").replace(/'/g, \"''\") }}',\n  '{{ ($json.body.message.text || \"\").replace(/'/g, \"''\") }}',\n  '{{ $json.body.message.timestamp }}'\n)\nON CONFLICT (id) DO UPDATE SET \n  text = EXCLUDED.text,\n  message = EXCLUDED.message\nRETURNING id, 'Message saved' AS status;\n",
+        "query": "INSERT INTO chat_messages (id, session_id, sender, text, message, timestamp)\nVALUES (\n  {{ Number($json.body.message.id) }},\n  '{{ $json.body.session_id }}',\n  '{{ $json.body.message.sender }}',\n  $$RECORD_TEXT_START$${{ $json.body.message.text || \"\" }}$$RECORD_TEXT_END$$,\n  $$RECORD_TEXT_START$${{ $json.body.message.text || \"\" }}$$RECORD_TEXT_END$$,\n  '{{ $json.body.message.timestamp }}'\n)\nON CONFLICT (id) DO UPDATE SET \n  text = EXCLUDED.text,\n  message = EXCLUDED.message\nRETURNING id, 'Message saved' AS status;",
         "additionalFields": {}
       },
       "name": "Postgres Save Message (erp_demo)",
@@ -338,7 +338,7 @@
           ]
         }
       },
-      "name": "Route Operation",
+      "name": "Route Auth Operations",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 1,
       "position": [
@@ -349,7 +349,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "ALTER TABLE erp_users ADD COLUMN IF NOT EXISTS avatar TEXT; SELECT id, email, role, needs_password_change, password_hash, avatar FROM erp_users WHERE LOWER(email) = LOWER('{{ $json.body.email }}');"
+        "query": "SELECT id, email, role, needs_password_change, password_hash, avatar FROM erp_users WHERE LOWER(email) = LOWER('{{ $json.body.email }}');"
       },
       "name": "Postgres Login Query",
       "type": "n8n-nodes-base.postgres",
@@ -468,14 +468,14 @@
       "main": [
         [
           {
-            "node": "Route Operation",
+            "node": "Route Chat Operations",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Route Operation": {
+    "Route Chat Operations": {
       "main": [
         [
           {
@@ -511,7 +511,11 @@
             "type": "main",
             "index": 0
           }
-        ],
+        ]
+      ]
+    },
+    "Route Auth Operations": {
+      "main": [
         [
           {
             "node": "Postgres Login Query",
@@ -615,7 +619,7 @@
       "main": [
         [
           {
-            "node": "Route Operation",
+            "node": "Route Auth Operations",
             "type": "main",
             "index": 0
           }

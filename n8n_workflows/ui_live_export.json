@@ -1,0 +1,609 @@
+[
+  {
+    "updatedAt": "2026-07-30T06:44:26.005Z",
+    "createdAt": "2026-07-28T08:43:01.439Z",
+    "id": "kMx4WadvBAXRlUSf",
+    "name": "ui",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "chat-history",
+          "options": {
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "name": "Access-Control-Allow-Headers",
+                  "value": "Content-Type, Authorization"
+                },
+                {
+                  "name": "Access-Control-Allow-Methods",
+                  "value": "OPTIONS,GET,PUT,POST,DELETE"
+                }
+              ]
+            },
+            "responseMode": "responseNode"
+          }
+        },
+        "name": "Chat History Webhook (/webhook/chat-history)",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          320,
+          2896
+        ],
+        "id": "9ae6e38d-b825-4fcc-ad03-882ffad5c907",
+        "webhookId": "07bedf02-d78b-40ce-b68f-5fa870ca84d0"
+      },
+      {
+        "parameters": {},
+        "name": "Route Chat Operations",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 1,
+        "position": [
+          -240,
+          2208
+        ],
+        "id": "35148d46-70c8-4097-87dd-ae6a2bc4ce5d"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT s.id, s.domain, s.title, s.is_pinned, s.updated_at,\n       COALESCE(json_agg(json_build_object('id', m.id, 'session_id', m.session_id, 'sender', m.sender, 'text', COALESCE(m.text, m.message), 'timestamp', m.timestamp) ORDER BY m.id ASC) FILTER (WHERE m.id IS NOT NULL), '[]'::json) AS messages\nFROM chat_sessions s\nLEFT JOIN chat_messages m ON s.id = m.session_id\nWHERE s.domain = '{{ $json.body.domain || $json.query.domain || \"database\" }}'\nGROUP BY s.id, s.domain, s.title, s.is_pinned, s.updated_at\nORDER BY s.updated_at DESC;",
+          "additionalFields": {}
+        },
+        "name": "Postgres Load Chat History (erp_demo)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          784,
+          2608
+        ],
+        "id": "39bedc5b-5f2f-4c52-bd4e-35c1c00d76fb",
+        "typeOptions": {
+          "alwaysOutputData": true
+        },
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "INSERT INTO chat_sessions (id, domain, title, is_pinned, updated_at)\nVALUES (\n  '{{ $json.body.session_id || $json.body.id }}',\n  '{{ $json.body.domain || \"database\" }}',\n  '{{ ($json.body.title || \"New Chat\").replace(/'/g, \"''\") }}',\n  {{ $json.body.is_pinned ? true : false }},\n  NOW()\n)\nON CONFLICT (id) DO UPDATE SET\n  title = EXCLUDED.title,\n  is_pinned = EXCLUDED.is_pinned,\n  updated_at = NOW()\nRETURNING id, 'Session saved successfully' AS status;\n",
+          "additionalFields": {}
+        },
+        "name": "Postgres Save Session (erp_demo)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          784,
+          2752
+        ],
+        "id": "8cea3fdd-4682-44bb-bce2-1e304a69baee",
+        "typeOptions": {
+          "alwaysOutputData": true
+        },
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "INSERT INTO chat_messages (id, session_id, sender, text, message, timestamp)\nVALUES (\n  {{ Number($json.body.message.id) }},\n  '{{ $json.body.session_id }}',\n  '{{ $json.body.message.sender }}',\n  $$RECORD_TEXT_START$${{ $json.body.message.text || \"\" }}$$RECORD_TEXT_END$$,\n  $$RECORD_TEXT_START$${{ $json.body.message.text || \"\" }}$$RECORD_TEXT_END$$,\n  '{{ $json.body.message.timestamp }}'\n)\nON CONFLICT (id) DO UPDATE SET \n  text = EXCLUDED.text,\n  message = EXCLUDED.message\nRETURNING id, 'Message saved' AS status;",
+          "additionalFields": {}
+        },
+        "name": "Postgres Save Message (erp_demo)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          784,
+          2896
+        ],
+        "id": "cf2373dd-2c4e-42ea-9114-624a4afd6baf",
+        "typeOptions": {
+          "alwaysOutputData": true
+        },
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT server_name, status, cpu_usage, memory_usage, disk_usage, network_speed, temperature_c, running_services, uptime \nFROM server_metrics \nORDER BY id DESC;",
+          "additionalFields": {}
+        },
+        "name": "Postgres Get Telemetry (erp_demo)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          784,
+          3040
+        ],
+        "id": "0c18713f-5cad-4588-a8d3-fb02914bc977",
+        "typeOptions": {
+          "alwaysOutputData": true
+        },
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT d.datname AS name,\n  'PostgreSQL 15' AS type,\n  CASE WHEN d.datistemplate THEN 'Template' ELSE 'Online & Active' END AS status,\n  pg_size_pretty(pg_database_size(d.datname)) AS storage,\n  (SELECT COUNT(*) FROM information_schema.tables WHERE table_catalog = d.datname AND table_schema NOT IN ('pg_catalog','information_schema'))::int AS tables,\n  (SELECT count(*) FROM pg_stat_activity WHERE datname = d.datname)::text || ' / ' || current_setting('max_connections') AS connections,\n  CASE WHEN (SELECT count(*) FROM pg_stat_replication) > 0 THEN 'Streaming' ELSE 'Standalone' END AS replication,\n  COALESCE((SELECT pg_size_pretty(pg_database_size(d.datname))), '\u0003') AS backup\nFROM pg_database d\nWHERE d.datname IN ('erp_demo', 'server_metrics', 'FOODAPPANDDB')\nORDER BY d.datname;",
+          "additionalFields": {}
+        },
+        "name": "Postgres Get DB Metadata",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          784,
+          3264
+        ],
+        "id": "66ed5ba0-de34-4c45-8dd1-8cc6aada047e",
+        "typeOptions": {
+          "alwaysOutputData": true
+        },
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "allIncomingItems",
+          "options": {}
+        },
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          1248,
+          2896
+        ],
+        "id": "5448fa3c-73c1-423c-9a41-d404147b2c45"
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "erp-auth",
+          "options": {
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "name": "Access-Control-Allow-Headers",
+                  "value": "Content-Type, Authorization"
+                },
+                {
+                  "name": "Access-Control-Allow-Methods",
+                  "value": "OPTIONS,GET,PUT,POST,DELETE"
+                }
+              ]
+            },
+            "responseMode": "responseNode"
+          }
+        },
+        "name": "Auth Webhook (/webhook/erp-auth)",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          -464,
+          2208
+        ],
+        "id": "94d68016-d1e1-4180-b5ce-2ae456dc09bc",
+        "webhookId": "909e13ee-f23c-43b7-b372-e3206adf9dab"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT id, email, role, needs_password_change, password_hash, avatar FROM erp_users WHERE LOWER(email) = LOWER('{{ $json.body.email }}');",
+          "additionalFields": {}
+        },
+        "name": "Postgres Login Query",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          0,
+          2048
+        ],
+        "id": "6336f5b7-2db8-4864-816d-10c0905b81e6",
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "functionCode": "const inputPassword = $node['Auth Webhook (/webhook/erp-auth)'].json.body.password;\nconst dbUser = items[0]?.json;\n\nif (!dbUser) {\n  return [{ json: { success: false, message: 'User not found. Ask Superadmin to create your account.' } }];\n}\n\nif (dbUser.password_hash !== inputPassword) {\n  return [{ json: { success: false, message: 'Invalid credentials' } }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    user: {\n      id: dbUser.id,\n      email: dbUser.email,\n      role: dbUser.role,\n      needs_password_change: dbUser.needs_password_change\n    }\n  }\n}];"
+        },
+        "name": "Verify Credentials & Hash",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          224,
+          2048
+        ],
+        "id": "7ef461ee-c54a-4237-91f8-f68f72a6b93b"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "INSERT INTO erp_users (email, role, password_hash, needs_password_change, created_at)\nVALUES (\n  LOWER('{{ $json.body.email }}'),\n  '{{ $json.body.role || \"admin\" }}',\n  '{{ $json.body.password }}',\n  TRUE,\n  NOW()\n)\nON CONFLICT (email) DO UPDATE SET\n  role = EXCLUDED.role,\n  password_hash = EXCLUDED.password_hash,\n  needs_password_change = TRUE;\n\nINSERT INTO audit_logs (user_email, action, target_user, ip_address, timestamp)\nVALUES (\n  'superadmin@company.com',\n  'Create Operator User',\n  '{{ $json.body.email }}',\n  '127.0.0.1',\n  NOW()\n);\n\nSELECT 'User created successfully' AS message;",
+          "additionalFields": {}
+        },
+        "name": "Postgres Create User",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          0,
+          2208
+        ],
+        "id": "569576ca-d95a-4f37-845c-aa51be9b9b14",
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "functionCode": "return [{ json: { success: true, message: 'User created/updated in PostgreSQL database.' } }];"
+        },
+        "name": "Format Create Success",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          224,
+          2208
+        ],
+        "id": "71f27a01-7671-4e06-a0f6-4d9c5c163847"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT id, email, role, needs_password_change, created_at, avatar FROM erp_users ORDER BY created_at DESC;",
+          "additionalFields": {}
+        },
+        "name": "Postgres List Users",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          0,
+          2352
+        ],
+        "id": "c576c362-f73b-4b20-ada3-35c8231c8a04",
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT id, user_email, action, target_user, ip_address, timestamp FROM audit_logs ORDER BY timestamp DESC LIMIT 50;",
+          "additionalFields": {}
+        },
+        "name": "Postgres List Audit Logs",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          0,
+          2512
+        ],
+        "id": "e2b4a643-b766-4bbd-b990-3f6bdbf19a2f",
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "name": "Respond to Frontend",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          464,
+          2208
+        ],
+        "id": "67295ae9-8c20-47de-b9fa-700cb4ef712b"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "UPDATE erp_users SET avatar = '{{ $json.body.avatar }}' WHERE LOWER(email) = LOWER('{{ $json.body.email }}'); SELECT 'Avatar updated successfully' as message;",
+          "options": {}
+        },
+        "name": "Postgres Update Avatar",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2,
+        "position": [
+          64,
+          2400
+        ],
+        "id": "69e3447d-8fa5-4ba5-aec9-4072bd569362",
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "UPDATE erp_users SET password_hash = '{{ $json.body.password }}' WHERE LOWER(email) = LOWER('{{ $json.body.email }}'); SELECT 'Password updated successfully' as message;",
+          "options": {}
+        },
+        "name": "Postgres Update Password",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2,
+        "position": [
+          64,
+          2608
+        ],
+        "id": "157cae0b-eb26-47c0-ac87-17c7a1c9d5b5",
+        "credentials": {
+          "postgres": {
+            "id": "5SLKrUbihN1Jvbgl",
+            "name": "Red_db"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Chat History Webhook (/webhook/chat-history)": {
+        "main": [
+          [
+            {
+              "node": "Route Chat Operations",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route Chat Operations": {
+        "main": [
+          [
+            {
+              "node": "Postgres Load Chat History (erp_demo)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Postgres Save Session (erp_demo)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Postgres Save Message (erp_demo)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Postgres Get Telemetry (erp_demo)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres Load Chat History (erp_demo)": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres Save Session (erp_demo)": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres Save Message (erp_demo)": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres Get Telemetry (erp_demo)": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres Get DB Metadata": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Auth Webhook (/webhook/erp-auth)": {
+        "main": [
+          [
+            {
+              "node": "Route Auth Operations",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres Login Query": {
+        "main": [
+          [
+            {
+              "node": "Verify Credentials & Hash",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Verify Credentials & Hash": {
+        "main": [
+          [
+            {
+              "node": "Respond to Frontend",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres Create User": {
+        "main": [
+          [
+            {
+              "node": "Format Create Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Create Success": {
+        "main": [
+          [
+            {
+              "node": "Respond to Frontend",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres List Users": {
+        "main": [
+          [
+            {
+              "node": "Respond to Frontend",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres List Audit Logs": {
+        "main": [
+          [
+            {
+              "node": "Respond to Frontend",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate",
+      "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": {
+      "templateCredsSetupCompleted": true
+    },
+    "nodeGroups": [],
+    "pinData": {},
+    "versionId": "eb6fffb2-f831-4e11-b755-91f627f81351",
+    "activeVersionId": "eb6fffb2-f831-4e11-b755-91f627f81351",
+    "versionCounter": 52,
+    "triggerCount": 2,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "shared": [
+      {
+        "updatedAt": "2026-07-28T08:43:01.455Z",
+        "createdAt": "2026-07-28T08:43:01.455Z",
+        "role": "workflow:owner",
+        "workflowId": "kMx4WadvBAXRlUSf",
+        "projectId": "oTwU4MqEoZc5FdxQ",
+        "project": {
+          "updatedAt": "2026-07-07T08:20:50.726Z",
+          "createdAt": "2026-07-07T08:12:10.373Z",
+          "id": "oTwU4MqEoZc5FdxQ",
+          "name": "Betelhem Hiluf <betelhem453@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "customTelemetryTags": [],
+          "creatorId": "9ec22143-8896-460d-8bdb-d60045787890"
+        }
+      }
+    ],
+    "versionMetadata": {
+      "name": "Version eb6fffb2",
+      "description": ""
+    }
+  }
+]
