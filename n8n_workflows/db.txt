@@ -1,0 +1,653 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DECLARE @requested_session_id INT;\nDECLARE @title NVARCHAR(MAX);\nDECLARE @user_message NVARCHAR(MAX);\nDECLARE @session_id INT;\n\nSET @title = '{{ $json.title_sql }}';  \nSET @user_message = '{{ $json.message_sql }}';  \n\nSET @requested_session_id = CASE\n  WHEN {{ Number($json.session_id || 0) }} BETWEEN 1 AND 2147483647\n  THEN {{ Number($json.session_id || 0) }}\n  ELSE 0\nEND;\n\nIF @requested_session_id > 0 AND EXISTS (SELECT 1 FROM chat_sessions WHERE id = @requested_session_id)\nBEGIN\n  SET @session_id = @requested_session_id;\nEND\nELSE\nBEGIN\n  INSERT INTO chat_sessions (session_title) VALUES (@title);\n  SET @session_id = SCOPE_IDENTITY();\nEND;\n\nINSERT INTO chat_messages (session_id, sender, message, metadata)\nVALUES (@session_id, 'user', @user_message, '{\"source\":\"frontend\"}');\n\nUPDATE chat_sessions\nSET updated_at = CURRENT_TIMESTAMP\nWHERE id = @session_id;\n\nSELECT \n  CAST(@session_id AS INT) AS session_id,\n  CAST(@user_message AS NVARCHAR(MAX)) AS user_message;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        17216,
+        3168
+      ],
+      "id": "95db0d4a-6e5b-4262-8207-7ad9ec7b233f",
+      "name": "Save User Message1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle CORS preflight requests\nconst method = $input.first().json.method || 'POST';\n\nif (method === 'OPTIONS') {\n  return [{ \n    json: { status: 'ok' },\n    headers: {\n      'Access-Control-Allow-Origin': '*',\n      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',\n      'Access-Control-Allow-Headers': 'Content-Type'\n    }\n  }];\n}\n\n// Pass through for normal requests\nreturn [{ json: $input.first().json }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16720,
+        3168
+      ],
+      "id": "f6f39f3a-267e-4f09-a136-b1243d7bb098",
+      "name": "Handle CORS"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "erp-chat",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "OPTIONS,GET,PUT,POST,DELETE"
+              }
+            ]
+          },
+          "responseMode": "responseNode"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        16512,
+        3168
+      ],
+      "id": "2c567867-5d1a-46e8-abca-bca0743d8fbb",
+      "name": "Chat Webhook1",
+      "webhookId": "e77eb0ed-ddd0-44e9-8fb8-21feb5990de1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\n\nconst rawMessage =\n  body.message ||\n  body.question ||\n  body.error_message ||\n  \"\";\n\nconst message = String(rawMessage).trim();\n\nconst rawSessionId = body.session_id;\nconst parsedSessionId = Number(rawSessionId);\n\nconst MAX_PG_INTEGER = 2147483647;\n\nconst sessionId =\n  Number.isInteger(parsedSessionId) &&\n  parsedSessionId > 0 &&\n  parsedSessionId <= MAX_PG_INTEGER\n    ? parsedSessionId\n    : 0;\n\nfunction sqlEscape(value) {\n  return String(value ?? \"\").replace(/'/g, \"''\");\n}\n\nlet title = message.slice(0, 60);\n\nif (!title) {\n  title = \"New chat\";\n}\n\nreturn [\n  {\n    json: {\n      message,\n      message_sql: sqlEscape(message),\n      session_id: sessionId,\n      title,\n      title_sql: sqlEscape(title),\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16976,
+        3168
+      ],
+      "id": "dd96959e-db64-41a0-aef6-d6c407cc0234",
+      "name": "Prepare Chat Input1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DECLARE @session_id INT;\nSET @session_id = {{ Number($(\"Save User Message1\").first().json.session_id || 0) }};\n\n-- chat_history\nDECLARE @chat_history NVARCHAR(MAX);\nSET @chat_history = ISNULL((\n  SELECT TOP (10) sender, message, created_at\n  FROM chat_messages\n  WHERE session_id = @session_id\n  ORDER BY created_at DESC\n  FOR JSON PATH\n), '[]');\n\n-- live_table_names (schema-qualified)\nDECLARE @table_names NVARCHAR(MAX);\nSET @table_names = ISNULL((\n  SELECT '[' + STRING_AGG(CAST('\"' + SCHEMA_NAME(schema_id) + '.' + name + '\"' AS NVARCHAR(MAX)), ',') WITHIN GROUP (ORDER BY SCHEMA_NAME(schema_id) + '.' + name) + ']'\n  FROM sys.tables\n  WHERE is_ms_shipped = 0\n), '[]');\n\n-- live_table_count\nDECLARE @table_count INT;\nSELECT @table_count = COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0;\n\n-- live_schema_columns\nDECLARE @columns NVARCHAR(MAX);\nSET @columns = ISNULL((\n  SELECT \n    SCHEMA_NAME(t.schema_id) + '.' + t.name AS table_name,\n    c.name AS column_name,\n    typ.name AS data_type,\n    CASE WHEN c.is_nullable = 1 THEN 'YES' ELSE 'NO' END AS is_nullable\n  FROM sys.columns c\n  JOIN sys.tables t ON c.object_id = t.object_id\n  JOIN sys.types typ ON c.user_type_id = typ.user_type_id\n  WHERE t.is_ms_shipped = 0\n  ORDER BY SCHEMA_NAME(t.schema_id) + '.' + t.name, c.column_id\n  FOR JSON PATH\n), '[]');\n\n-- live_foreign_keys\nDECLARE @foreign_keys NVARCHAR(MAX);\nSET @foreign_keys = ISNULL((\n  SELECT \n    SCHEMA_NAME(tp.schema_id) + '.' + tp.name AS source_table,\n    cp.name AS source_column,\n    SCHEMA_NAME(rt.schema_id) + '.' + rt.name AS target_table,\n    rc.name AS target_column\n  FROM sys.foreign_keys fk\n  INNER JOIN sys.tables tp ON fk.parent_object_id = tp.object_id\n  INNER JOIN sys.tables rt ON fk.referenced_object_id = rt.object_id\n  INNER JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id\n  INNER JOIN sys.columns cp ON fkc.parent_object_id = cp.object_id AND fkc.parent_column_id = cp.column_id\n  INNER JOIN sys.columns rc ON fkc.referenced_object_id = rc.object_id AND fkc.referenced_column_id = rc.column_id\n  WHERE tp.is_ms_shipped = 0 AND rt.is_ms_shipped = 0\n  FOR JSON PATH\n), '[]');\n\n-- live_primary_keys\nDECLARE @primary_keys NVARCHAR(MAX);\nSET @primary_keys = ISNULL((\n  SELECT \n    SCHEMA_NAME(t.schema_id) + '.' + t.name AS table_name,\n    c.name AS column_name\n  FROM sys.tables t\n  INNER JOIN sys.indexes i ON t.object_id = i.object_id\n  INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n  INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id\n  WHERE i.is_primary_key = 1 AND t.is_ms_shipped = 0\n  ORDER BY SCHEMA_NAME(t.schema_id) + '.' + t.name\n  FOR JSON PATH\n), '[]');\n\n-- live_table_row_counts\nDECLARE @row_counts NVARCHAR(MAX);\nSET @row_counts = ISNULL((\n  SELECT '{' + STRING_AGG(CAST('\"' + table_name + '\":' + CAST(row_count AS VARCHAR(20)) AS NVARCHAR(MAX)), ',') + '}'\n  FROM (\n    SELECT SCHEMA_NAME(t.schema_id) + '.' + t.name AS table_name, SUM(p.rows) AS row_count\n    FROM sys.tables t\n    INNER JOIN sys.partitions p ON t.object_id = p.object_id\n    WHERE p.index_id IN (0, 1) AND t.is_ms_shipped = 0\n    GROUP BY SCHEMA_NAME(t.schema_id) + '.' + t.name\n  ) AS t\n), '{}');\n\nSELECT \n  @session_id AS session_id,\n  @chat_history AS chat_history,\n  @table_names AS live_table_names,\n  @table_count AS live_table_count,\n  @columns AS live_schema_columns,\n  @foreign_keys AS live_foreign_keys,\n  @primary_keys AS live_primary_keys,\n  @row_counts AS live_table_row_counts;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        17504,
+        3168
+      ],
+      "id": "f604dc0d-5012-44ff-bab6-345b89f8ebf1",
+      "name": "Fetch Schema Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const saved = $(\"Save User Message1\").first().json;\nconst schema = $(\"Fetch Schema Data\").first().json;\nconst question = String(saved.user_message || \"\").trim();\nconst q = question.toLowerCase();\n\nfunction parseJson(val) {\n  if (typeof val === 'string') { try { return JSON.parse(val); } catch(e) { return []; } }\n  return val || [];\n}\nfunction parseRowCounts(val) {\n  if (typeof val === 'string') { try { return JSON.parse(val); } catch(e) { return {}; } }\n  return val || {};\n}\n\nconst tableNames = parseJson(schema.live_table_names);\nconst tableCount = schema.live_table_count || 0;\nconst columns = parseJson(schema.live_schema_columns);\nconst foreignKeys = parseJson(schema.live_foreign_keys);\nconst primaryKeys = parseJson(schema.live_primary_keys);\nconst rowCounts = parseRowCounts(schema.live_table_row_counts);\n\n// List of all valid schemas in the database\nconst SCHEMAS = new Set([\n  'accounting', 'article', 'cinema', 'common', 'consignee', \n  'dbo', 'hrms', 'pms', 'questionnaire', 'security', 'setting', 'transaction'\n]);\n\n// Mapping of business modules to schemas\nconst MODULE_MAP = {\n  'Accounting': ['accounting'],\n  'Inventory': ['article'],\n  'Hotel': ['pms'],\n  'HR': ['hrms'],\n  'Security': ['security'],\n  'Configuration': ['setting'],\n  'Core': ['common', 'dbo'],\n  'Transactions': ['transaction']\n};\n\n// Common English words that are also table names in this database\nconst COMMON_WORDS_AS_TABLES = new Set([\n  'user', 'users', 'role', 'roles', 'question', 'questions', 'answer', 'answers',\n  'session', 'sessions', 'event', 'events', 'state', 'states', 'group', 'groups',\n  'plan', 'plans', 'value', 'values', 'type', 'types', 'key', 'keys',\n  'date', 'dates', 'name', 'names', 'status', 'statuses', 'class', 'classes',\n  'level', 'levels', 'rule', 'rules', 'order', 'orders', 'sale', 'sales',\n  'transaction', 'transactions', 'lookup', 'lookups', 'attachment', 'attachments',\n  'location', 'locations', 'reference', 'references', 'report', 'reports', 'holiday', 'holidays'\n]);\n\n// ============ STOP WORDS ============\nconst STOP = new Set(['the','a','an','is','are','was','were','be','been','have','has','had','do','does','did',\n  'will','would','could','should','may','might','can','need','must','let','i','me','my','we','you','your',\n  'he','she','it','they','them','this','that','what','which','who','how','when','where','why','all','each',\n  'every','any','some','no','not','but','and','or','if','then','so','than','too','very','just','only','also',\n  'tell','show','list','give','get','find','search','describe','explain','display','print','enumerate',\n  'table','tables','column','columns','field','fields','schema','schemas','database','data','query',\n  'select','from','where','join','insert','update','delete','into','values','set','create','drop','alter',\n  'error','exist','exists','about','like','with','for','use','using','between','please','help','want',\n  'know','see','check','look','run','execute','generate','sql','tsql','mssql','server','microsoft',\n  'many','much','count','total','number','there','here','now','new','name','named','called','type','key',\n  'primary','foreign','duplicate','violation','constraint','null','unique','reference','left','right',\n  'inner','outer','on','as','in','to','of','by','at','asc','desc','order','group','having','limit','top']);\n\n// ============ SYNONYMS ============\nconst SYNONYMS = {\n  'customer': ['consignee', 'consigneeunit', 'client', 'customer', 'users', 'user'],\n  'user': ['user', 'users', 'employee', 'member', 'staff', 'consignee'],\n  'role': ['role', 'roles', 'userrolemapper', 'permission', 'access', 'accessmatrix'],\n  'product': ['item', 'material', 'stock', 'inventory', 'product', 'products'],\n  'order': ['sale', 'purchase', 'invoice', 'transaction', 'order', 'orders']\n};\n\n// ============ LEVENSHTEIN ============\nfunction lev(a,b){\n  const m=a.length,n=b.length,d=Array.from({length:m+1},()=>Array(n+1).fill(0));\n  for(let i=0;i<=m;i++)d[i][0]=i; for(let j=0;j<=n;j++)d[0][j]=j;\n  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)\n    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]!==b[j-1]?1:0));\n  return d[m][n];\n}\n\nfunction findSimilarTables(term, maxN=5) {\n  const tl = term.toLowerCase().trim().replace(/_/g, '');\n  const relatedTerms = [tl];\n  for (const key in SYNONYMS) {\n    const normKey = key.replace(/_/g, '');\n    if (normKey === tl || SYNONYMS[key].map(s => s.replace(/_/g, '')).includes(tl)) {\n      SYNONYMS[key].forEach(syn => {\n        const normSyn = syn.replace(/_/g, '');\n        if (!relatedTerms.includes(normSyn)) relatedTerms.push(normSyn);\n      });\n    }\n  }\n\n  return tableNames.map(t => {\n    const pure = t.toLowerCase().split('.').pop().replace(/_/g, '');\n    const full = t.toLowerCase().replace(/_/g, '');\n    \n    let minDist = 999;\n    let isSub = false;\n    for (const rt of relatedTerms) {\n      const dist = Math.min(lev(rt, pure), lev(rt, full));\n      if (dist < minDist) minDist = dist;\n      if (pure.includes(rt) || rt.includes(pure)) isSub = true;\n    }\n    \n    return { table: t, dist: minDist, inc: isSub };\n  }).sort((a,b) => (a.inc && !b.inc ? -1 : !a.inc && b.inc ? 1 : a.dist - b.dist))\n    .slice(0, maxN);\n}\n\n// ============ TABLE RESOLVER ============\nfunction resolveTable(name) {\n  if (!name) return null;\n  const cleanName = name.replace(/[\\[\\]']/g, '').trim().toLowerCase();\n  const normalizedSearch = cleanName.replace(/_/g, '');\n  \n  // 1. Exact match with schema prefix (ignoring underscores)\n  let match = tableNames.find(t => {\n    const tNorm = t.toLowerCase().replace(/_/g, '');\n    return tNorm === normalizedSearch;\n  });\n  if (match) return match;\n\n  // 2. Exact match with pure table name (ignoring underscores)\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return pure === normalizedSearch;\n  });\n  if (match) return match;\n\n  // 3. Substring match: if the search term is a substring of a table name, or vice versa (ignoring underscores)\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return (pure.includes(normalizedSearch) && normalizedSearch.length >= 4) || (normalizedSearch.includes(pure) && pure.length >= 4);\n  });\n  if (match) return match;\n\n  // 4. Singularized match (ignoring underscores)\n  const singular = cleanName.endsWith('ies') ? cleanName.slice(0, -3) + 'y' : (cleanName.endsWith('s') ? cleanName.slice(0, -1) : cleanName);\n  const normalizedSingular = singular.replace(/_/g, '');\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return pure === normalizedSingular;\n  });\n  if (match) return match;\n\n  // 5. Fuzzy synonym or close distance match\n  const sim = findSimilarTables(cleanName, 1);\n  if (sim.length && (sim[0].dist <= 2 || sim[0].inc)) {\n    return sim[0].table;\n  }\n  \n  return null;\n}\n\n// Get dynamic descriptions for tables based on schema rules\nfunction getTableDescription(tableName) {\n  const lower = tableName.toLowerCase();\n  if (lower.includes('consignee')) return 'Represents customer, vendor, or company profiles and account records.';\n  if (lower.includes('userrole') || lower.includes('access')) return 'Maps users to their specific system roles and access permissions.';\n  if (lower.includes('user')) return 'Represents application login accounts and authentication details.';\n  if (lower.includes('account')) return 'Represents general ledger accounts for financial and journal entries.';\n  if (lower.includes('article') || lower.includes('stock') || lower.includes('inventory')) return 'Stores items, materials, inventory stock levels, or product definitions.';\n  if (lower.includes('rate') || lower.includes('room') || lower.includes('pms')) return 'Defines property management configurations, rooms, rates, and occupancy strategies.';\n  if (lower.includes('voucher') || lower.includes('transaction')) return 'Records transactional journal details, invoice headers, or voucher items.';\n  return `Database table in the ${tableName.split('.')[0]} schema.`;\n}\n\n// Check if a word is explicitly referencing a table to avoid greedy matches on common words\nfunction isTableReferencedExplicitly(word, query) {\n  const qLower = query.toLowerCase();\n  const wLower = word.toLowerCase();\n  \n  if (wLower.includes('.')) return true;\n  if (!COMMON_WORDS_AS_TABLES.has(wLower)) return true;\n  \n  const patterns = [\n    new RegExp(`\\\\b(table|tables|schema|describe|inspect|columns?|show|select|from|join|update|into|delete)\\\\s+${wLower}\\\\b`, 'i'),\n    new RegExp(`\\\\b${wLower}\\\\s+(table|tables|schema|columns?|details?)\\\\b`, 'i')\n  ];\n  \n  if (patterns.some(p => p.test(qLower))) {\n    return true;\n  }\n  \n  const cleanQ = qLower.replace(/[^a-z0-9]/g, '').trim();\n  if (cleanQ === wLower || cleanQ === wLower + 's' || cleanQ === wLower.slice(0, -1)) {\n    return true;\n  }\n  \n  return false;\n}\n\n// ============ HELPERS ============\nfunction searchColumn(term, cols) {\n  const r={exact:[],partial:[]};\n  for(const c of cols){const cl=c.column_name.toLowerCase();\n    if(cl===term.toLowerCase()) r.exact.push(`${c.table_name}.${c.column_name} (${c.data_type})`);\n    else if(cl.includes(term.toLowerCase())) r.partial.push(`${c.table_name}.${c.column_name} (${c.data_type})`);\n  } return r;\n}\n\nfunction getTableSchema(table) {\n  const c=columns.filter(x=>x.table_name===table);\n  const p=primaryKeys.filter(x=>x.table_name===table);\n  const fOut=foreignKeys.filter(x=>x.source_table===table);\n  const fIn=foreignKeys.filter(x=>x.target_table===table);\n  return {\n    columns:c.map(x=>`${x.column_name} (${x.data_type})${p.some(y=>y.column_name===x.column_name)?' \ud83d\udd11 PK':''}${x.is_nullable==='YES'?' NULL':' NOT NULL'}`),\n    fkOut:fOut.map(x=>`${x.source_column} \u2192 ${x.target_table}.${x.target_column}`),\n    fkIn:fIn.map(x=>`${x.source_table}.${x.source_column} \u2192 ${x.target_column}`)\n  };\n}\n\n// BFS shortest path search implementation (avoids high-hop hallucinations)\nfunction findFKPathBFS(from, to) {\n  if (from === to) return [];\n  const queue = [[from, []]];\n  const visited = new Set([from]);\n\n  while (queue.length > 0) {\n    const [current, path] = queue.shift();\n\n    for (const f of foreignKeys) {\n      if (f.source_table === current) {\n        const nextTable = f.target_table;\n        if (!visited.has(nextTable)) {\n          const step = { from: f.source_table, fc: f.source_column, to: f.target_table, tc: f.target_column };\n          const newPath = [...path, step];\n          if (nextTable === to) return newPath;\n          visited.add(nextTable);\n          queue.push([nextTable, newPath]);\n        }\n      }\n      if (f.target_table === current) {\n        const nextTable = f.source_table;\n        if (!visited.has(nextTable)) {\n          const step = { from: f.target_table, fc: f.target_column, to: f.source_table, tc: f.source_column };\n          const newPath = [...path, step];\n          if (nextTable === to) return newPath;\n          visited.add(nextTable);\n          queue.push([nextTable, newPath]);\n        }\n      }\n    }\n  }\n  return null;\n}\n\nfunction genJoinSQL(path){\n  if(!path||!path.length)return'';\n  let s=`SELECT *\\nFROM [${path[0].from.replace('.','].[')}]`;\n  for(const p of path) s+=`\\nJOIN [${p.to.replace('.','].[')}] ON [${p.from.replace('.','].[')}].[${p.fc}] = [${p.to.replace('.','].[')}].[${p.tc}]`;\n  return s+';';\n}\n\nfunction getSchemas(){\n  const s=new Set(); tableNames.forEach(t=>{const p=t.split('.');if(p.length>1)s.add(p[0]);}); return[...s];\n}\n\nfunction extractTablesFromSQL(sql){\n  const cleanSql = sql.replace(/[\\[\\]]/g, '');\n  const t=new Set();let m;\n  const r1=/(?:FROM|JOIN|INTO|UPDATE|MERGE)\\s+([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_]+)/gi;\n  while((m=r1.exec(cleanSql))!==null) t.add(`${m[1]}.${m[2]}`);\n  const r2=/(?:FROM|JOIN|INTO|UPDATE|MERGE)\\s+([a-zA-Z0-9_]+)/gi;\n  while((m=r2.exec(cleanSql))!==null){if(!STOP.has(m[1].toLowerCase())) t.add(m[1]);}\n  return[...t];\n}\n\nfunction extractColumnFromError(msg){\n  const pats=[\n    /column\\s+[\"']?([a-zA-Z0-9_]+)[\"']?/i,\n    /[\"']([a-zA-Z0-9_]+)[\"']\\s+(?:does not exist|is not valid)/i,\n    /invalid column name\\s+[\"']?([a-zA-Z0-9_]+)[\"']?/i,\n    /column\\s+['\"\\[]?([a-zA-Z0-9_]+)['\"\\]]?/i\n  ];\n  for(const p of pats){const m=msg.match(p);if(m)return m[1];} return null;\n}\n\nfunction validateSQL(sql){\n  const issues=[],warns=[];\n  const refs=extractTablesFromSQL(sql);\n  for(const t of refs){\n    const r=resolveTable(t);\n    if(!r){const sim=findSimilarTables(t,3);\n      issues.push(sim.length?`\u274c Table \\`${t}\\` not found. Did you mean: ${sim.map(s=>'\\`'+s.table+'\\`').join(', ')}?`:`\u274c Table \\`${t}\\` does not exist.`);\n    }\n  }\n  return{valid:issues.length===0,issues,warns};\n}\n\n// Generate direct relationship tree programmatically (No LLM token cost)\nfunction getDirectRelationships(tbl) {\n  const related = new Set();\n  foreignKeys.forEach(fk => {\n    if (fk.source_table === tbl) {\n      related.add(fk.target_table);\n    }\n    if (fk.target_table === tbl) {\n      related.add(fk.source_table);\n    }\n  });\n  const list = Array.from(related).sort();\n  if (list.length === 0) {\n    return `Table \\`${tbl}\\` has no direct foreign key connections in the metadata.`;\n  }\n  let res = `\ud83d\udccb **Direct Relationships for \\`${tbl}\\`**:\\n\\n\\`\\`\\`\\n${tbl}\\n`;\n  list.forEach((t, i) => {\n    const isLast = i === list.length - 1;\n    res += `${isLast ? '\u2514\u2500\u2500 ' : '\u251c\u2500\u2500 '}${t}\\n`;\n  });\n  res += `\\`\\`\\``;\n  return res;\n}\n\n// ============================================\n// INTENT CLASSIFICATION\n// ============================================\nlet response=null, confidence=100, intent=\"direct\";\n\nconst words = q.match(/\\b([a-zA-Z0-9_\\.]+)\\b/g) || [];\nconst meaningful = words.filter(w => w.length>=3 && !STOP.has(w.toLowerCase()));\n\n// Search for a main table mentioned in query (with context check)\nlet foundTable = null;\nfor (const w of meaningful) {\n  if (isTableReferencedExplicitly(w, question)) {\n    const resolved = resolveTable(w);\n    if (resolved) {\n      foundTable = resolved;\n      break;\n    }\n  }\n}\n\n// Detect if a specific schema is mentioned in query\nlet mentionedSchema = null;\nfor (const s of SCHEMAS) {\n  if (new RegExp(`\\\\b${s}\\\\b`, 'i').test(q)) {\n    mentionedSchema = s;\n    break;\n  }\n}\n\n// Count mentioned schemas to identify general module schema queries\nconst mentionedSchemas = [];\nSCHEMAS.forEach(s => {\n  if (new RegExp(`\\\\b${s}\\\\b`, 'i').test(q)) {\n    mentionedSchemas.push(s);\n  }\n});\n\n// Check if query is a conversational or complex query (not a simple metadata list request)\nconst isComplexOrConversational = \n  /\\b(question|write|query|how|join|relationship|calculate|report|generate|error|fail|violate|violates|constraint|exception)\\b/i.test(q) ||\n  q.includes(':') || // e.g. \"Question:\", \"Tables:\" followed by question\n  words.length > 15; // long query is likely a question, not a simple \"list tables\" command\n\n// Letter filter table list detector\nlet letter = null;\nconst m1 = q.match(/\\bstarts?\\s+with\\s+['\"\\[]?([a-z])\\b/i);\nconst m2 = q.match(/\\bstarting\\s+with\\s+['\"\\[]?([a-z])\\b/i);\nconst m3 = q.match(/\\b([a-z])\\s+starts?\\b/i);\nconst m4 = q.match(/\\btables?\\s+(?:start|starting)\\s+with\\s+['\"\\[]?([a-z])\\b/i);\nconst m5 = q.match(/\\bstart\\s+with\\s+['\"\\[]?([a-z])\\b/i);\nif (m1) letter = m1[1];\nelse if (m2) letter = m2[1];\nelse if (m3) letter = m3[1];\nelse if (m4) letter = m4[1];\nelse if (m5) letter = m5[1];\n\n// 1. GREETING\nif(/^(hello|hi|hey|greetings|morning|evening|salam|selam)\\b/.test(q)){\n  response=`Hello! \ud83d\udc4b I'm your ERP Database Assistant.\\n\\n\ud83d\udcca **Loaded:** ${tableCount} tables | ${columns.length} columns | ${foreignKeys.length} FKs across ${getSchemas().length} schemas.\\n\\nTry: **list tables**, **describe [table]**, **join X with Y**, or paste any SQL error.`;\n  intent=\"greeting\";\n}\n\n// 2. HELP\nelse if(/^(help|what can you|commands|features)\\b/.test(q)){\n  response=`\ud83d\udcda **Commands:**\\n  \u2022 **List tables** \u2014 all ${tableCount} tables by schema\\n  \u2022 **Describe [table]** \u2014 columns, PKs, FKs\\n  \u2022 **Find column [name]** \u2014 cross-table search\\n  \u2022 **Trace/Join [A] to [B]** \u2014 FK path + JOIN SQL\\n  \u2022 **Database stats** \u2014 summary\\n  \u2022 **[paste error]** \u2014 deep diagnosis\\n  \u2022 **Any question** \u2014 validated T-SQL generation`;\n  intent=\"help\";\n}\n\n// 3. TABLE FILTER BY LETTER (High Priority to prevent listing all tables)\nelse if (letter && !isComplexOrConversational) {\n  const matched = tableNames.filter(t => {\n    const parts = t.split('.');\n    const name = parts.length > 1 ? parts[1] : parts[0];\n    return name && name.toLowerCase().startsWith(letter.toLowerCase());\n  });\n  if (matched.length > 0) {\n    response = `\ud83d\udcca **Tables starting with \"${letter.toUpperCase()}\"** (${matched.length} tables):\\n\\n` +\n               matched.map(t => `  \u2022 ${t}`).join('\\n');\n  } else {\n    response = `\u274c No tables found starting with the letter \"${letter.toUpperCase()}\".`;\n  }\n  intent = \"table_list_filtered\";\n}\n\n// 4. DATABASE STATS\nelse if(!isComplexOrConversational && (/\\b(stats|statistics|summary|overview|db info)\\b/.test(q) || (q.includes('how many') && q.includes('table')))){\n  const sn=getSchemas();\n  const bd=sn.map(s=>`  \u2022 **${s}**: ${tableNames.filter(t=>t.startsWith(s+'.')).length} tables`).join('\\n');\n  response=`\ud83d\udcca **Database Summary**\\n\\n  \u2022 **Tables:** ${tableCount}\\n  \u2022 **Columns:** ${columns.length}\\n  \u2022 **Foreign Keys:** ${foreignKeys.length}\\n  \u2022 **Primary Keys:** ${primaryKeys.length}\\n  \u2022 **Schemas:** ${sn.length}\\n\\n**Breakdown:**\\n${bd}`;\n  intent=\"db_stats\";\n}\n\n// 5. DIRECT RELATIONSHIPS LOOKUP (Direct Response, no LLM)\nelse if (q.includes('related') || q.includes('relationship') || q.includes('connect')) {\n  let targetTable = foundTable;\n  if (!targetTable) {\n    for (const w of meaningful) {\n      const resolved = resolveTable(w);\n      if (resolved) {\n        targetTable = resolved;\n        break;\n      }\n    }\n  }\n  if (targetTable && (q.includes('directly') || q.includes('show') || q.includes('every') || q.includes('all'))) {\n    response = getDirectRelationships(targetTable);\n    intent = \"direct_relationships\";\n  }\n}\n\nif (response === null) {\n  // 6. BUSINESS MODULES & SCHEMAS OVERVIEW (Accounting, Inventory, Hotel, HR, Security, etc.)\n  const listModulesQuery = /accounting|inventory|hotel|hr|security|configuration|core|transactions/i.test(q) && mentionedSchemas.length >= 2;\n  if (listModulesQuery && !isComplexOrConversational) {\n    let r = `\ud83d\udcc1 **Database Modules & Schemas Overview**\\n\\n`;\n    for (const mod in MODULE_MAP) {\n      const schs = MODULE_MAP[mod];\n      const matchSchs = schs.filter(s => tableNames.some(t => t.startsWith(s + '.')));\n      if (matchSchs.length > 0) {\n        r += `\u2022 **${mod}** (Schema: \\`${matchSchs.join(', ')}\\`):\\n`;\n        const modTables = tableNames.filter(t => matchSchs.some(s => t.startsWith(s + '.')));\n        r += `  *Tables (${modTables.length}):* ` + modTables.slice(0, 6).map(t => t.split('.').pop()).join(', ') + (modTables.length > 6 ? ', ...' : '') + `\\n\\n`;\n      }\n    }\n    response = r;\n    intent = \"schema_list\";\n  }\n\n  // 7. LIST ALL TABLES\n  else if(\n    !isComplexOrConversational && (\n      (/\\b(list|show|give|tell|print|display|get|enumerate)\\b/.test(q)&&/\\b(table|tables|all)\\b/.test(q))||\n      /^(tables|all\\s*table|table\\s*list|every\\s*table)/.test(q)||\n      (q.includes('all')&&q.includes('table'))||\n      (/what.*table/.test(q)&&!foundTable)||(/which.*table/.test(q)&&!foundTable)\n    )\n  ){\n    const schemaFilter=(q.match(/(?:in|from|of)\\s+(\\w+)\\s+schema/i)||[])[1] || mentionedSchema;\n    const schemas={};\n    tableNames.forEach(t=>{\n      const p=t.split('.');\n      const sn=p.length>1?p[0]:'dbo';\n      if(!schemas[sn]) schemas[sn]=[];\n      schemas[sn].push(t);\n    });\n    \n    const includeKeys = /\\b(key|keys|primary|foreign|pk|fk)\\b/i.test(q);\n    \n    if(schemaFilter && schemas[schemaFilter]){\n      let r = `\ud83d\udcc1 **Schema: ${schemaFilter}** (${schemas[schemaFilter].length} tables):\\n\\n`;\n      r += schemas[schemaFilter].map(t => {\n        if (includeKeys) {\n          const info = getTableSchema(t);\n          const pkStr = info.columns.filter(c => c.includes('\ud83d\udd11 PK')).map(c => c.split(' ')[0]).join(', ') || 'None';\n          const fkStr = info.fkOut.map(fk => fk.split(' \u2192 ')[0]).join(', ') || 'None';\n          return `  \u2022 **${t}**\\n    - Primary Key: \\`${pkStr}\\`\\n    - Outgoing Foreign Keys: \\`${fkStr}\\``;\n        }\n        return `  \u2022 ${t}`;\n      }).join('\\n');\n      response = r;\n    } else {\n      let r=`\ud83d\udcca **Total Tables: ${tableCount}** (by Schema)\\n\\n`;\n      for(const s in schemas) {\n        r+=`\ud83d\udcc1 **${s}** (${schemas[s].length}):\\n`;\n        r+=schemas[s].map(t=> {\n          if (includeKeys) {\n            const info = getTableSchema(t);\n            const pkStr = info.columns.filter(c => c.includes('\ud83d\udd11 PK')).map(c => c.split(' ')[0]).join(', ') || 'None';\n            const fkStr = info.fkOut.map(fk => fk.split(' \u2192 ')[0]).join(', ') || 'None';\n            return `  \u2022 **${t}** | PK: \\`${pkStr}\\` | FK: \\`${fkStr}\\``;\n          }\n          return `  \u2022 ${t}`;\n        }).join('\\n') + `\\n\\n`;\n      }\n      response=r;\n    }\n    intent=\"table_list\";\n  }\n\n  // 8. SCHEMA DESCRIBE\n  else if (!isComplexOrConversational && mentionedSchema && /\\b(schema|schemas|namespace|namespace)\\b/i.test(q) && !foundTable) {\n    const schemaTables = tableNames.filter(t => t.startsWith(mentionedSchema + '.'));\n    response = `\ud83d\udcc1 **Schema: \\`${mentionedSchema}\\`** (${schemaTables.length} tables)\\n\\n` +\n               `Here are all tables in the **${mentionedSchema}** schema:\\n` +\n               schemaTables.map(t => {\n                 const info = getTableSchema(t);\n                 const pkStr = info.columns.filter(c => c.includes('\ud83d\udd11 PK')).map(c => c.split(' ')[0]).join(', ') || 'None';\n                 return `  \u2022 **${t}** (${info.columns.length} columns) | PK: \\`${pkStr}\\``;\n               }).join('\\n');\n    intent = \"schema_describe\";\n  }\n\n  // 9. ALL COLUMNS SUMMARY\n  else if (!isComplexOrConversational && /\\b(all\\s+columns?|columns?\\s+of\\s+each|columns?\\s+of\\s+all)\\b/i.test(q)) {\n    response = `\ud83d\udcca **Database Columns Summary**\\n\\nThe database contains **${columns.length} columns** across **${tableCount} tables**.\\n\\nTo view columns for a specific table or schema, use:\\n\u2022 \\`describe [table_name]\\` (e.g., \\`describe security.User\\`)\\n\u2022 \\`schema [schema_name]\\` (e.g., \\`schema accounting\\`)\\n\\nHere is a list of schemas with their table and column counts:\\n` +\n      getSchemas().map(s => {\n        const sTables = tableNames.filter(t => t.startsWith(s + '.'));\n        const sCols = columns.filter(c => c.table_name.startsWith(s + '.'));\n        return `  \u2022 **${s}**: ${sTables.length} tables, ${sCols.length} columns`;\n      }).join('\\n');\n    intent = \"all_columns_summary\";\n  }\n\n  // 10. ERROR DIAGNOSIS\n  else if(/\\b(error|exception|fail|violation|cannot|invalid|does not exist|not found|denied|conflict)\\b/.test(q)&&q.length>20){\n    const errCol=extractColumnFromError(question);\n    const errTables=extractTablesFromSQL(question);\n    const constraintMatch=saved.user_message.match(/(?:constraint|index|key)\\s+[\"'\\[]?([a-zA-Z0-9_]+)[\"'\\]]?/i) || saved.user_message.match(/[\"']?([a-zA-Z0-9_]+)[\"']?\\s+constraint/i);\n    let constraintName = constraintMatch ? constraintMatch[1] : null;\n    const genericWords = new Set(['row', 'key', 'table', 'column', 'error', 'constraint', 'index', 'primary', 'unique', 'foreign']);\n    if (constraintName && (genericWords.has(constraintName.toLowerCase()) || constraintName.length < 3)) {\n      constraintName = null;\n    }\n    const lo=q;\n\n    // Extract table name from error message\n    const objMatch = question.match(/object\\s+[\"'\\[]?([a-zA-Z0-9_\\.]+)[\"'\\]]?/i) || question.match(/table\\s+[\"'\\[]?([a-zA-Z0-9_\\.]+)[\"'\\]]?/i);\n    if (objMatch && !errTables.includes(objMatch[1])) {\n      errTables.push(objMatch[1]);\n    }\n    \n    if (constraintName) {\n      tableNames.forEach(t => {\n        const pure = t.toLowerCase().split('.').pop();\n        if (constraintName.toLowerCase().includes(pure) && !errTables.includes(t)) {\n          errTables.push(t);\n        }\n      });\n    }\n\n    // Column not found error\n    if(lo.includes('column')&&(lo.includes('does not exist')||lo.includes('invalid column')||lo.includes('not found'))){\n      const tbl=errTables.length?resolveTable(errTables[0]):null;\n      response=`\ud83d\udc1b **Error: Column Not Found**\\n\\n`;\n      if(errCol) response+=`  \u2022 **Column:** \\`${errCol}\\`\\n`;\n      if(errTables.length) response+=`  \u2022 **Referenced Table:** \\`${errTables[0]}\\`\\n`;\n      if(tbl){\n        const info=getTableSchema(tbl);\n        response+=`  \u2022 **Resolved To:** \\`${tbl}\\`\\n\\n**Available Columns in \\`${tbl}\\`:**\\n${info.columns.map(c=>'  \u2022 '+c).join('\\n')}`;\n        if(errCol){\n          const similar=columns.filter(c=>c.table_name===tbl&&(c.column_name.toLowerCase().includes(errCol.toLowerCase())||errCol.toLowerCase().includes(c.column_name.toLowerCase())));\n          if(similar.length) response+=`\\n\\n\ud83d\udca1 **Did you mean:** ${similar.map(c=>'\\`'+c.column_name+'\\`').join(', ')}?`;\n        }\n      } else if(errTables.length){\n        const sim=findSimilarTables(errTables[0],5);\n        response+=`\\n\u274c Table \\`${errTables[0]}\\` not found.\\n\\n\ud83d\udca1 **Closest matches:**\\n${sim.map(s=>'  \u2022 '+s.table+' (distance: '+s.dist+')').join('\\n')}`;\n      }\n      intent=\"error_diagnosis\"; confidence=95;\n\n    // FK violation\n    } else if(lo.includes('foreign key')||lo.includes('reference')){\n      response=`\ud83d\udc1b **Error: Foreign Key Violation**\\n\\n`;\n      if(constraintName) response+=`  \u2022 **Constraint Name:** \\`${constraintName}\\`\\n`;\n      \n      const resolvedTable = errTables.length ? resolveTable(errTables[0]) : null;\n      \n      if(resolvedTable){\n        response+=`  \u2022 **Target Table:** \\`${resolvedTable}\\`\\n\\n`;\n        \n        const fks=foreignKeys.filter(f=>\n          f.source_table===resolvedTable || f.target_table===resolvedTable ||\n          (constraintName && f.constraint_name && f.constraint_name.toLowerCase() === constraintName.toLowerCase())\n        );\n        if(fks.length){\n          response+=`\ud83d\udd0d **Missing FK Connection Details:**\\n`;\n          fks.forEach((f, idx) => {\n            response += `\\n**Option ${idx + 1}:**\\n\\`${f.source_table}.${f.source_column}\\`\\n  \u2193\\n\\`${f.target_table}.${f.target_column}\\`\\n`;\n          });\n          \n          response+=`\\n\ud83d\udca1 **Helper Queries (Run these to verify referenced parent records exist):**\\n\\`\\`\\`sql\\n`;\n          fks.forEach(f => {\n            response += `SELECT * FROM [${f.target_table.split('.')[0]}].[${f.target_table.split('.')[1]}] WHERE [${f.target_column}] = ?;\\n`;\n          });\n          response+=`\\`\\`\\``;\n        }\n      } else if(errTables.length) {\n        response+=`\u274c Target table \\`${errTables[0]}\\` not found in database.`;\n      }\n      intent=\"error_diagnosis\"; confidence=95;\n\n    // Duplicate key\n    } else if(lo.includes('duplicate key')||lo.includes('unique')||lo.includes('cannot insert duplicate')){\n      response=`\ud83d\udc1b **Error: Duplicate Key Violation**\\n\\n`;\n      \n      const resolved=errTables.length?resolveTable(errTables[0]):null;\n      if(resolved){\n        response+=`  \u2022 **Target Table:** \\`${resolved}\\`\\n`;\n        const pks = primaryKeys.filter(pk => pk.table_name === resolved).map(pk => pk.column_name);\n        \n        if (constraintName) {\n          response+=`  \u2022 **Constraint:** \\`${constraintName}\\`\\n`;\n        } else if (pks.length > 0) {\n          response+=`  \u2022 **Constraint:** \\`PK_${resolved.split('.').pop()}\\` (Inferred)\\n`;\n        } else {\n          response+=`  \u2022 **Constraint:** \\`Constraint name unavailable in metadata\\`\\n`;\n        }\n        \n        let checkCols = pks.length ? pks : [];\n        if (checkCols.length === 0) {\n          const cols = columns.filter(c => c.table_name === resolved);\n          if (cols.length > 0) checkCols.push(cols[0].column_name);\n        }\n        \n        response+=`  \u2022 **Affected columns:** \\`${checkCols.join(', ')}\\`\\n\\n`;\n        \n        response += `\ud83d\udccb **Possible Causes:**\\n`;\n        response += `  \u2713 **Primary Key (PK) Violation:** Attempting to insert a row with an existing identifier.\\n`;\n        response += `  \u2713 **Unique Constraint Violation:** Column(s) marked as UNIQUE already contain the value.\\n`;\n        response += `  \u2713 **Unique Index Violation:** A unique index prevents duplicate entries on these columns.\\n\\n`;\n        \n        const colsList = checkCols.map(c => `[${c}]`).join(', ');\n        response+=`\ud83d\udd0d **To Identify Duplicates (Run this query to locate existing records):**\\n\\`\\`\\`sql\\n`;\n        response+=`SELECT ${colsList}, COUNT(*)\\nFROM [${resolved.split('.')[0]}].[${resolved.split('.')[1]}]\\nGROUP BY ${colsList}\\nHAVING COUNT(*) > 1;\\n\\`\\`\\``;\n      } else {\n        response+=`  \u2022 **Constraint:** \\`Constraint name unavailable in metadata\\`\\n`;\n      }\n      intent=\"error_diagnosis\"; confidence=90;\n\n    // Table not found\n    } else if(lo.includes('invalid object name')||lo.includes('relation')||(lo.includes('table')&&lo.includes('does not exist'))){\n      const tblMatch=\n        question.match(/invalid object name\\s+[\"'\\[]?([a-zA-Z0-9_\\.]+)[\"'\\]]?/i)||\n        question.match(/relation\\s+[\"'\\[]?([a-zA-Z0-9_\\.]+)[\"'\\]]?/i)||\n        question.match(/table\\s+[\"'\\[]?([a-zA-Z0-9_\\.]+)[\"'\\]]?/i);\n      \n      let missing=null;\n      if (tblMatch) {\n        const candidate = tblMatch[1].replace(/[\\[\\]'\"]/g, '').trim();\n        if (!STOP.has(candidate.toLowerCase()) && candidate.length > 1) {\n          missing = candidate;\n        }\n      }\n      if (!missing && errTables.length > 0) {\n        missing = errTables[0];\n      }\n\n      response=`\ud83d\udc1b **Error: Table Not Found**\\n\\n`;\n      if(missing){\n        response+=`\u2022 **Missing Table:** \\`${missing}\\`\\n\\n`;\n        const sim=findSimilarTables(missing.split('.').pop(), 3);\n        if(sim.length){\n          response+=`\ud83d\udca1 **Recommended Table:**\\n`;\n          response+=`\u2022 **\\`${sim[0].table}\\`** (Reason: ${getTableDescription(sim[0].table)})\\n\\n`;\n          if(sim.length > 1) {\n            response+=`\ud83d\udca1 **Alternative Tables:**\\n`;\n            sim.slice(1).forEach(s => {\n              response+=`\u2022 **\\`${s.table}\\`** (Reason: ${getTableDescription(s.table)})\\n`;\n            });\n          }\n        } else {\n          response+=`\u274c No similar tables found.`;\n        }\n      } else {\n        response+=`\u274c Table not specified in the error.`;\n      }\n      intent=\"error_diagnosis\"; confidence=90;\n    }\n  }\n\n  // 11. TABLE SCHEMA / DESCRIBE\n  else if(foundTable&&(/schema|column|colum|field|detail|structure|describe|what is|about|inspect|show me/.test(q)||meaningful.length===1)){\n    const info=getTableSchema(foundTable);\n    response=`\ud83d\udccb **Table: \\`${foundTable}\\`**\\n\\n**Columns (${info.columns.length}):**\\n${info.columns.map(c=>'  \u2022 '+c).join('\\n')}`;\n    if(info.fkOut.length) response+=`\\n\\n**Outgoing FKs:**\\n${info.fkOut.map(c=>'  \u2192 '+c).join('\\n')}`;\n    if(info.fkIn.length) response+=`\\n\\n**Incoming FKs:**\\n${info.fkIn.map(c=>'  \u2190 '+c).join('\\n')}`;\n    if(rowCounts[foundTable]!==undefined) response+=`\\n\\n**Rows:** ${rowCounts[foundTable]}`;\n    intent=\"table_schema\";\n  }\n\n  // 12. TABLE NOT FOUND\n  else if(meaningful.length>0&&meaningful.length<=3&&!foundTable&&\n    (/\\b(table|exist|find|where|look)\\b/.test(q)||/doesn.t exist|not found|no table|can.t find/.test(q))){\n    const term=meaningful[meaningful.length-1];\n    const sim=findSimilarTables(term, 3);\n    response=`\u274c No table named \\`${term}\\` exists.\\n\\n`;\n    if(sim.length){\n      response+=`\ud83d\udca1 **Recommended Table:**\\n`;\n      response+=`\u2022 **\\`${sim[0].table}\\`** (Reason: ${getTableDescription(sim[0].table)})\\n\\n`;\n      if(sim.length > 1) {\n        response+=`\ud83d\udca1 **Alternative Tables:**\\n`;\n        sim.slice(1).forEach(s => {\n          response+=`\u2022 **\\`${s.table}\\`** (Reason: ${getTableDescription(s.table)})\\n`;\n        });\n      }\n    } else {\n      response+=`No similar tables found among ${tableCount} tables.`;\n    }\n    intent=\"table_not_found\"; confidence=85;\n  }\n\n  // 13. COLUMN SEARCH\n  else if(/\\b(column|colum|find|search|where is)\\b/.test(q)&&!foundTable){\n    const term=q.replace(/column|colum|find|search|where is|named|has|contains/gi,'').trim();\n    const results=searchColumn(term,columns);\n    if(results.exact.length>0){\n      response=`\u2705 **Column '${term}' found:**\\n`+results.exact.map(c=>`  \u2022 ${c}`).join('\\n');\n      if(results.partial.length>0) response+=`\\n\\nAlso found ${results.partial.length} similar columns.`;\n      intent=\"column_search\";\n    } else if(results.partial.length>0){\n      response=`\ud83d\udd0d **'${term}' \u2014 ${results.partial.length} similar columns:**\\n`+results.partial.slice(0,15).map(c=>`  \u2022 ${c}`).join('\\n');\n      if(results.partial.length>15) response+=`... and ${results.partial.length-15} more`;\n      intent=\"column_partial\";\n    } else {\n      response=`\u274c Column '${term}' not found in ${tableCount} tables.`; confidence=60; intent=\"column_not_found\";\n    }\n  }\n\n  // 14. JOIN GENERATION (BFS path search)\n  else if(/\\bjoin\\b/.test(q)){\n    const matched=[];\n    meaningful.forEach(w=>{\n      const m=resolveTable(w);\n      if(m&&!matched.includes(m))matched.push(m);\n    });\n    if(matched.length>=2){\n      const path=findFKPathBFS(matched[0],matched[1]);\n      if(path){\n        const joinSQL=genJoinSQL(path);\n        const viz=path.map((p,i)=>`  ${i+1}. **${p.from}**.${p.fc} \u2192 **${p.to}**.${p.tc}`).join('\\n');\n        const val=validateSQL(joinSQL);\n        response=`\ud83d\udd17 **Join Path: ${matched[0]} \u2192 ${matched[1]}**\\n\\n${viz}\\n\\n\\`\\`\\`sql\\n${joinSQL}\\n\\`\\`\\``;\n        if(!val.valid) response+=`\\n\\n\u26a0\ufe0f **Validation:**\\n${val.issues.join('\\n')}`;\n        intent=\"join_query\";\n      } else {\n        response=`Verified FK:\\nNone found.\\n\\nPossible business relationship:\\n` + getBusinessInference(matched[0], matched[1]);\n        confidence=40; intent=\"join_not_found\";\n      }\n    } else if(matched.length===1){\n      response=`Found \\`${matched[0]}\\`. Specify a second table: \"Join ${matched[0]} with [table]\"`;\n      confidence=50; intent=\"join_ambiguous\";\n    } else {\n      response=`Specify two tables. Example: \"Join common.User with security.Role\"`;\n      confidence=50; intent=\"join_ambiguous\";\n    }\n  }\n\n  // 15. FK PATH / TRACE (BFS path search)\n  else if(/\\b(connected|relationship|path|trace|relate)\\b/.test(q)){\n    const matched=[];\n    meaningful.forEach(w=>{\n      const m=resolveTable(w);\n      if(m&&!matched.includes(m))matched.push(m);\n    });\n    if(matched.length>=2){\n      const path=findFKPathBFS(matched[0],matched[1]);\n      if(path){\n        response=`\ud83d\udd17 **FK Path: ${matched[0]} \u2192 ${matched[1]}:**\\n${path.map((p,i)=>`  ${i+1}. ${p.from}.${p.fc} \u2192 ${p.to}.${p.tc}`).join('\\n')}`;\n        intent=\"fk_path\";\n      } else {\n        response=`Verified FK:\\nNone found.\\n\\nPossible business relationship:\\n` + getBusinessInference(matched[0], matched[1]);\n        confidence=40; intent=\"fk_not_found\";\n      }\n    } else {\n      response=`Specify two tables. Example: \"Trace common.Activity to accounting.Account\"`; confidence=50; intent=\"fk_ambiguous\";\n    }\n  }\n\n  // 16. SCHEMA LIST\n  else if(/\\b(schema|schemas|namespace|namespaces)\\b/.test(q)&&/\\b(list|show|all|what|which)\\b/.test(q)){\n    const sn=getSchemas();\n    response=`\ud83d\udcc1 **${sn.length} Schemas:**\\n${sn.map(s=>{const c=tableNames.filter(t=>t.startsWith(s+'.')).length;return`  \u2022 **${s}** (${c} tables)`;}).join('\\n')}`;\n    intent=\"schema_list\";\n  }\n\n  // 17. GENERAL / AI FALLBACK\n  else if(q.length>5){\n    intent=\"ai_fallback\";\n  } else {\n    response=`Please ask a database question. Try:\\n  \u2022 List tables\\n  \u2022 Describe accounting.Account\\n  \u2022 Find column email\\n  \u2022 Join User with Role`;\n    confidence=50; intent=\"empty\";\n  }\n}\n\n// Helper function to return business inference for unmatched FK searches\nfunction getBusinessInference(t1, t2) {\n  return `No direct foreign key connection exists between \\`${t1}\\` and \\`${t2}\\` in the database schema.\\n\\n` +\n         `\u2022 **${t1}**: ${getTableDescription(t1)}\\n` +\n         `\u2022 **${t2}**: ${getTableDescription(t2)}\\n\\n` +\n         `\ud83d\udca1 **Business Inference:** These tables reside in different modules. To bridge them, check if they can be joined logically via transactional header tables (e.g. \\`transaction.Voucher\\`) or system configuration details depending on your query.`;\n}\n\nreturn [{\n  json: {\n    session_id: saved.session_id, question, intent, response, confidence,\n    needs_ai: intent===\"ai_fallback\",\n    table_count: tableCount, all_table_names: tableNames,\n    chat_history: schema.chat_history||'[]',\n    live_schema_columns: columns, live_foreign_keys: foreignKeys,\n    live_primary_keys: primaryKeys, column_count: columns.length,\n    fk_count: foreignKeys.length\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        17776,
+        3168
+      ],
+      "id": "d12ef8e9-6df7-431b-a0f1-0cc081956a7c",
+      "name": "Process Intent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nif (!data.needs_ai) {\n  return [{\n    json: {\n      ...data,\n      skip_ai: true,\n      prompt: ''\n    }\n  }];\n}\n\nconst question = data.question;\nconst q = question.toLowerCase();\n\n// Parse schema structures\nconst tableNames = data.all_table_names || [];\nconst columns = data.live_schema_columns || [];\nconst foreignKeys = data.live_foreign_keys || [];\nconst primaryKeys = data.live_primary_keys || [];\n\n// ============ LEVENSHTEIN & FUZZY RESOLVER ============\nfunction lev(a,b){\n  const m=a.length,n=b.length,d=Array.from({length:m+1},()=>Array(n+1).fill(0));\n  for(let i=0;i<=m;i++)d[i][0]=i; for(let j=0;j<=n;j++)d[0][j]=j;\n  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)\n    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]!==b[j-1]?1:0));\n  return d[m][n];\n}\n\nconst STOP = new Set(['the','a','an','is','are','was','were','be','been','have','has','had','do','does','did',\n  'will','would','could','should','may','might','can','need','must','let','i','me','my','we','you','your',\n  'he','she','it','they','them','this','that','what','which','who','how','when','where','why','all','each',\n  'every','any','some','no','not','but','and','or','if','then','so','than','too','very','just','only','also',\n  'tell','show','list','give','get','find','search','describe','explain','display','print','enumerate',\n  'table','tables','column','columns','field','fields','schema','schemas','database','data','query',\n  'select','from','where','join','insert','update','delete','into','values','set','create','drop','alter',\n  'error','exist','exists','about','like','with','for','use','using','between','please','help','want',\n  'know','see','check','look','run','execute','generate','sql','tsql','mssql','server','microsoft',\n  'many','much','count','total','number','there','here','now','new','name','named','called','type','key',\n  'primary','foreign','duplicate','violation','constraint','null','unique','reference','left','right',\n  'inner','outer','on','as','in','to','of','by','at','asc','desc','order','group','having','limit','top']);\n\nconst SYNONYMS = {\n  'customer': ['consignee', 'consigneeunit', 'client', 'customer', 'users', 'user'],\n  'user': ['user', 'users', 'employee', 'member', 'staff', 'consignee'],\n  'role': ['role', 'roles', 'userrolemapper', 'permission', 'access', 'accessmatrix'],\n  'product': ['item', 'material', 'stock', 'inventory', 'product', 'products'],\n  'order': ['sale', 'purchase', 'invoice', 'transaction', 'order', 'orders']\n};\n\nconst COMMON_WORDS_AS_TABLES = new Set([\n  'user', 'users', 'role', 'roles', 'question', 'questions', 'answer', 'answers',\n  'session', 'sessions', 'event', 'events', 'state', 'states', 'group', 'groups',\n  'plan', 'plans', 'value', 'values', 'type', 'types', 'key', 'keys',\n  'date', 'dates', 'name', 'names', 'status', 'statuses', 'class', 'classes',\n  'level', 'levels', 'rule', 'rules', 'order', 'orders', 'sale', 'sales',\n  'transaction', 'transactions', 'lookup', 'lookups', 'attachment', 'attachments',\n  'location', 'locations', 'reference', 'references', 'report', 'reports', 'holiday', 'holidays'\n]);\n\nfunction findSimilarTables(term, maxN=3) {\n  const tl = term.toLowerCase().trim().replace(/_/g, '');\n  const relatedTerms = [tl];\n  for (const key in SYNONYMS) {\n    const normKey = key.replace(/_/g, '');\n    if (normKey === tl || SYNONYMS[key].map(s => s.replace(/_/g, '')).includes(tl)) {\n      SYNONYMS[key].forEach(syn => {\n        const normSyn = syn.replace(/_/g, '');\n        if (!relatedTerms.includes(normSyn)) relatedTerms.push(normSyn);\n      });\n    }\n  }\n\n  return tableNames.map(t => {\n    const pure = t.toLowerCase().split('.').pop().replace(/_/g, '');\n    const full = t.toLowerCase().replace(/_/g, '');\n    \n    let minDist = 999;\n    let isSub = false;\n    for (const rt of relatedTerms) {\n      const dist = Math.min(lev(rt, pure), lev(rt, full));\n      if (dist < minDist) minDist = dist;\n      if (pure.includes(rt) || rt.includes(pure)) isSub = true;\n    }\n    \n    return { table: t, dist: minDist, inc: isSub };\n  }).sort((a,b) => (a.inc && !b.inc ? -1 : !a.inc && b.inc ? 1 : a.dist - b.dist))\n    .slice(0, maxN);\n}\n\nfunction resolveTable(name) {\n  if (!name) return null;\n  const cleanName = name.replace(/[\\[\\]']/g, '').trim().toLowerCase();\n  const normalizedSearch = cleanName.replace(/_/g, '');\n  \n  // 1. Exact match with schema prefix (ignoring underscores)\n  let match = tableNames.find(t => {\n    const tNorm = t.toLowerCase().replace(/_/g, '');\n    return tNorm === normalizedSearch;\n  });\n  if (match) return match;\n\n  // 2. Exact match with pure table name (ignoring underscores)\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return pure === normalizedSearch;\n  });\n  if (match) return match;\n\n  // 3. Substring match: if the search term is a substring of a table name, or vice versa (ignoring underscores)\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return (pure.includes(normalizedSearch) && normalizedSearch.length >= 4) || (normalizedSearch.includes(pure) && pure.length >= 4);\n  });\n  if (match) return match;\n\n  // 4. Singularized match (ignoring underscores)\n  const singular = cleanName.endsWith('ies') ? cleanName.slice(0, -3) + 'y' : (cleanName.endsWith('s') ? cleanName.slice(0, -1) : cleanName);\n  const normalizedSingular = singular.replace(/_/g, '');\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return pure === normalizedSingular;\n  });\n  if (match) return match;\n\n  // 5. Fuzzy synonym or close distance match\n  const sim = findSimilarTables(cleanName, 1);\n  if (sim.length && (sim[0].dist <= 2 || sim[0].inc)) {\n    return sim[0].table;\n  }\n  \n  return null;\n}\n\nfunction isTableReferencedExplicitly(word, query) {\n  const qLower = query.toLowerCase();\n  const wLower = word.toLowerCase();\n  \n  if (wLower.includes('.')) return true;\n  if (!COMMON_WORDS_AS_TABLES.has(wLower)) return true;\n  \n  const patterns = [\n    new RegExp(`\\\\b(table|tables|schema|describe|inspect|columns?|show|select|from|join|update|into|delete)\\\\s+${wLower}\\\\b`, 'i'),\n    new RegExp(`\\\\b${wLower}\\\\s+(table|tables|schema|columns?|details?)\\\\b`, 'i')\n  ];\n  \n  if (patterns.some(p => p.test(qLower))) return true;\n  \n  const cleanQ = qLower.replace(/[^a-z0-9]/g, '').trim();\n  if (cleanQ === wLower || cleanQ === wLower + 's' || cleanQ === wLower.slice(0, -1)) return true;\n  \n  return false;\n}\n\n// Extract SQL tables (bracket-clean version)\nfunction extractTablesFromSQL(sql){\n  const cleanSql = sql.replace(/[\\[\\]]/g, '');\n  const t=new Set();let m;\n  const r1=/(?:FROM|JOIN|INTO|UPDATE|MERGE)\\s+([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_]+)/gi;\n  while((m=r1.exec(cleanSql))!==null) t.add(`${m[1]}.${m[2]}`);\n  const r2=/(?:FROM|JOIN|INTO|UPDATE|MERGE)\\s+([a-zA-Z0-9_]+)(?!\\s*\\.)/gi;\n  while((m=r2.exec(cleanSql))!==null){if(!STOP.has(m[1].toLowerCase())) t.add(m[1]);}\n  return[...t];\n}\n\n// Extract Column from Error\nfunction extractColumnFromError(msg){\n  const pats=[\n    /column\\s+[\"']?([a-zA-Z0-9_]+)[\"']?/i,\n    /[\"']([a-zA-Z0-9_]+)[\"']\\s+(?:does not exist|is not valid)/i,\n    /invalid column name\\s+[\"']?([a-zA-Z0-9_]+)[\"']?/i,\n    /column\\s+['\"\\[]?([a-zA-Z0-9_]+)['\"\\]]?/i\n  ];\n  for(const p of pats){const m=msg.match(p);if(m)return m[1];} return null;\n}\n\n// BFS shortest path search implementation (avoids high-hop hallucinations)\nfunction findFKPathBFS(from, to) {\n  if (from === to) return [];\n  const queue = [[from, []]];\n  const visited = new Set([from]);\n\n  while (queue.length > 0) {\n    const [current, path] = queue.shift();\n\n    for (const f of foreignKeys) {\n      if (f.source_table === current) {\n        const nextTable = f.target_table;\n        if (!visited.has(nextTable)) {\n          const step = { from: f.source_table, fc: f.source_column, to: f.target_table, tc: f.target_column };\n          const newPath = [...path, step];\n          if (nextTable === to) return newPath;\n          visited.add(nextTable);\n          queue.push([nextTable, newPath]);\n        }\n      }\n      if (f.target_table === current) {\n        const nextTable = f.source_table;\n        if (!visited.has(nextTable)) {\n          const step = { from: f.target_table, fc: f.target_column, to: f.source_table, tc: f.source_column };\n          const newPath = [...path, step];\n          if (nextTable === to) return newPath;\n          visited.add(nextTable);\n          queue.push([nextTable, newPath]);\n        }\n      }\n    }\n  }\n  return null;\n}\n\nfunction genJoinSQL(path){\n  if(!path||!path.length)return'';\n  let s=`SELECT *\\nFROM [${path[0].from.replace('.','].[')}]`;\n  for(const p of path) s+=`\\nJOIN [${p.to.replace('.','].[')}] ON [${p.from.replace('.','].[')}].[${p.fc}] = [${p.to.replace('.','].[')}].[${p.tc}]`;\n  return s+';';\n}\n\n// ===================================================\n// TABLE RETRIEVER (Select Top 10-12 Relevant Tables)\n// ===================================================\nconst retrievedTables = new Set();\nconst explicitTables = []; // Explicitly mentioned tables to avoid wrong pre-computed joins\nconst words = q.match(/\\b([a-zA-Z0-9_\\.]+)\\b/g) || [];\nconst meaningful = words.filter(w => w.length>=3 && !STOP.has(w.toLowerCase()));\n\n// 1. Explicitly resolved tables from question keywords\nconst parsedSQLTables = extractTablesFromSQL(question);\nparsedSQLTables.forEach(t => {\n  const res = resolveTable(t);\n  if (res) {\n    retrievedTables.add(res);\n    if (!explicitTables.includes(res)) explicitTables.push(res);\n  }\n});\n\nconst errCol = extractColumnFromError(question);\nconst objMatch = question.match(/object\\s+[\"'\\[]?([a-zA-Z0-9_\\.]+)[\"'\\]]?/i) || question.match(/table\\s+[\"'\\[]?([a-zA-Z0-9_\\.]+)[\"'\\]]?/i);\nif (objMatch) {\n  const res = resolveTable(objMatch[1]);\n  if (res) {\n    retrievedTables.add(res);\n    if (!explicitTables.includes(res)) explicitTables.push(res);\n  }\n}\n\nfor (const w of meaningful) {\n  if (isTableReferencedExplicitly(w, question)) {\n    const resolved = resolveTable(w);\n    if (resolved) {\n      retrievedTables.add(resolved);\n      if (!explicitTables.includes(resolved)) explicitTables.push(resolved);\n    }\n  }\n}\n\n// 2. Schema domain keyword fallbacks\nconst domainKeywords = {\n  pms: ['hotel', 'room', 'rate', 'pms', 'booking', 'reservation', 'guest', 'nightly', 'hk', 'block', 'calendar'],\n  accounting: ['accounting', 'account', 'journal', 'ledger', 'balance', 'trial', 'depreciation', 'controlaccount'],\n  article: ['inventory', 'stock', 'article', 'product', 'item', 'wac', 'balance', 'modifier'],\n  hrms: ['hr', 'employee', 'attendance', 'shift', 'attendance_log', 'career', 'hobby', 'job'],\n  security: ['security', 'user', 'role', 'permission', 'access', 'matrix', 'mapper', 'card'],\n  transaction: ['transaction', 'voucher', 'invoice', 'sale', 'purchase', 'lineitem', 'closedrelation']\n};\n\nfor (const schemaName in domainKeywords) {\n  const keywords = domainKeywords[schemaName];\n  if (keywords.some(kw => q.includes(kw))) {\n    tableNames.forEach(t => {\n      if (t.startsWith(schemaName + '.')) {\n        retrievedTables.add(t);\n      }\n    });\n  }\n}\n\n// 3. Fallback to similar tables if still empty\nif (retrievedTables.size === 0) {\n  for (const w of meaningful) {\n    const sim = findSimilarTables(w, 2);\n    sim.forEach(s => retrievedTables.add(s.table));\n  }\n}\n\n// 4. 2-Hop graph expansion to ensure related relational context is loaded\nconst hop1 = new Set();\nretrievedTables.forEach(t => {\n  foreignKeys.forEach(fk => {\n    if (fk.source_table === t) hop1.add(fk.target_table);\n    if (fk.target_table === t) hop1.add(fk.source_table);\n  });\n});\nhop1.forEach(t => retrievedTables.add(t));\n\nconst hop2 = new Set();\nretrievedTables.forEach(t => {\n  foreignKeys.forEach(fk => {\n    if (fk.source_table === t) hop2.add(fk.target_table);\n    if (fk.target_table === t) hop2.add(fk.source_table);\n  });\n});\nhop2.forEach(t => retrievedTables.add(t));\n\n// 5. Cap total retrieved tables to a maximum of 12 to prevent token overflows\nconst finalTablesList = Array.from(retrievedTables).slice(0, 12);\n\n// ===================================================\n// COLUMN RETRIEVER (Format schema context only for selected tables)\n// ===================================================\nlet schemaContext = \"\";\nif (finalTablesList.length > 0) {\n  schemaContext = \"**Relevant Database Schemas (Only tables matching your question's context):**\\n\";\n  finalTablesList.forEach(t => {\n    const tableCols = columns.filter(c => c.table_name === t);\n    const tablePKs = primaryKeys.filter(pk => pk.table_name === t).map(pk => pk.column_name);\n    const tableFKs = foreignKeys.filter(fk => fk.source_table === t);\n    \n    schemaContext += `Table: ${t}\\n`;\n    schemaContext += `  Columns:\\n`;\n    tableCols.forEach(c => {\n      const isPK = tablePKs.includes(c.column_name) ? \" (\ud83d\udd11 Primary Key)\" : \"\";\n      schemaContext += `    - ${c.column_name} (${c.data_type})${isPK} ${c.is_nullable === 'YES' ? 'Nullable' : 'Not Null'}\\n`;\n    });\n    if (tableFKs.length > 0) {\n      schemaContext += `  Foreign Key Connections:\\n`;\n      tableFKs.forEach(fk => {\n        schemaContext += `    - ${fk.source_column} -> ${fk.target_table}.${fk.target_column}\\n`;\n      });\n    }\n    schemaContext += \"\\n\";\n  });\n} else {\n  schemaContext = \"No specific table matched in the query keywords. Here is the list of all schema-qualified tables available:\\n\" + tableNames.join(', ') + \"\\n\";\n}\n\n// ===================================================\n// BFS RELATIONSHIP ROUTER (Strictly uses explicitTables)\n// ===================================================\nlet suggestedJoinContext = \"\";\nif (explicitTables.length >= 2) {\n  const path = findFKPathBFS(explicitTables[0], explicitTables[1]);\n  if (path) {\n    const sqlJoin = genJoinSQL(path);\n    suggestedJoinContext = `**Verified Relationships and Suggested JOIN Path:**\\n`;\n    suggestedJoinContext += `Path: ${path.map(p => `${p.from}.${p.fc} -> ${p.to}.${p.tc}`).join(' | ')}\\n`;\n    suggestedJoinContext += `Query:\\n${sqlJoin}\\n\\n`;\n  } else {\n    suggestedJoinContext = `**Verified Relationships:**\\nNo verified foreign key path exists between \\`${explicitTables[0]}\\` and \\`${explicitTables[1]}\\`.\\n`;\n    suggestedJoinContext += `Note: Additional metadata or manual business logic mapping is required to link these objects. Do NOT output any join SQL if no verified FK path exists in metadata.\\n\\n`;\n  }\n}\n\n// Format Conversational Chat History (Memory)\nlet historyText = \"\";\nif (data.chat_history) {\n  let historyList = [];\n  try {\n    historyList = typeof data.chat_history === 'string' ? JSON.parse(data.chat_history) : data.chat_history;\n  } catch(e) {}\n  if (Array.isArray(historyList) && historyList.length > 0) {\n    historyList.slice().reverse().forEach(h => {\n      historyText += `${h.sender === 'user' ? 'User' : 'Assistant'}: ${h.message}\\n`;\n    });\n  }\n}\n\nconst prompt = `You are an expert AI Database Assistant for Microsoft SQL Server (T-SQL).\nAnswer the user's question with a friendly, ChatGPT-like tone. Provide precise explanations and, where applicable, generate clear, working T-SQL queries.\n\nLanguage Guideline:\n- You MUST answer and explain ONLY in English. Do NOT under any circumstances output Amharic or translate any terms to Amharic. Keep all responses strictly in English.\n\nDatabase Summary:\n- Total tables in DB: ${data.table_count}\n- Total columns in DB: ${data.column_count}\n\n${schemaContext}\n${suggestedJoinContext}\nConversation History:\n${historyText}\nUser: ${question}\n\nInstructions:\n1. Be helpful, professional, and explain your answers in English only.\n2. Always use schema-qualified names (e.g., \"accounting.Account\" instead of \"Account\") as shown in the schemas above.\n3. Make sure to generate T-SQL queries compatible with MS SQL Server.\n4. METADATA USAGE & HALLUCINATION PREVENTION: \n   - Never invent table or column names under any circumstances. Every table, column, and schema you use in your generated SQL query MUST exist exactly as spelled in the \"Relevant Database Schemas\" section above.\n   - If a table or column does not exist in the provided schema metadata, do not guess it. (e.g., use \"article.CalculatedStockBalance\" instead of \"CalculatedStock\", \"article.Article\" instead of \"Articlee\").\n5. SQL VALIDATION: Before outputting any SQL query, verify that every table, column, and schema used in the query exists exactly as specified in the provided metadata. If it doesn't exist, do not use it. Correct any plural/singular typos (e.g. use \"common.User\" instead of \"users\").\n6. UNVERIFIED JOINS: If the relationship between tables is NOT verified in the pre-computed JOIN path (or says \"No verified foreign key path exists\"), do NOT attempt to join them in the generated SQL. Instead, set the 'sql' property to an empty string, and in your 'answer' state: \"Relationship cannot be verified. Additional metadata is required to join these tables.\"\n7. ERROR DIAGNOSIS: When the user pastes a database error (e.g. duplicate key, foreign key, or invalid column):\n   - Identify the exact constraint name, referenced columns, target table, and referenced values from the error message.\n   - Explain why the error occurred using the actual table names from the metadata.\n   - Suggest a specific SQL query to find the conflict or fix it.\n8. Output your response as a JSON object with this structure:\n{\n  \"answer\": \"Your markdown explanation / message / help / recommendations (written strictly in English)\",\n  \"sql\": \"SELECT ... FROM ... (T-SQL query if requested, or leave empty if no query is needed)\"\n}`;\n\nreturn [{\n  json: {\n    ...data,\n    skip_ai: false,\n    prompt\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        18032,
+        3168
+      ],
+      "id": "4db5a25b-64ca-4372-8414-807bc6c1237a",
+      "name": "Build Minimal Prompt"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        18304,
+        3168
+      ],
+      "id": "20c7fb83-88af-4b65-a2b7-ce6220015f9d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst promptData = $('Process Intent').first().json;\n\n// Direct responses (non-AI intents)\nif (promptData.response) {\n  const directAnswer = promptData.response;\n  return [{\n    json: {\n      session_id: promptData.session_id,\n      answer: directAnswer,\n      answer_sql: directAnswer.replace(/'/g, \"''\"),\n      question: promptData.question,\n      confidence: promptData.confidence || 95,\n      mode: promptData.intent || 'direct'\n    }\n  }];\n}\n\nlet answer = \"I processed your request.\";\nlet confidence = 85;\nlet generatedSql = \"\";\nconst raw = data.output || data.text || data.response || '';\n\n// Parse metadata for validation\nconst tableNames = promptData.all_table_names || [];\nconst columns = promptData.live_schema_columns || [];\nconst foreignKeys = promptData.live_foreign_keys || [];\nconst primaryKeys = promptData.live_primary_keys || [];\n\nconst SCHEMAS = new Set([\n  'accounting', 'article', 'cinema', 'common', 'consignee', \n  'dbo', 'hrms', 'pms', 'questionnaire', 'security', 'setting', 'transaction'\n]);\n\n// ============ LEVENSHTEIN & RESOLVERS ============\nfunction lev(a,b){\n  const m=a.length,n=b.length,d=Array.from({length:m+1},()=>Array(n+1).fill(0));\n  for(let i=0;i<=m;i++)d[i][0]=i; for(let j=0;j<=n;j++)d[0][j]=j;\n  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)\n    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]!==b[j-1]?1:0));\n  return d[m][n];\n}\n\nconst STOP = new Set(['the','a','an','is','are','was','were','be','been','have','has','had','do','does','did',\n  'will','would','could','should','may','might','can','need','must','let','i','me','my','we','you','your',\n  'he','she','it','they','them','this','that','what','which','who','how','when','where','why','all','each',\n  'every','any','some','no','not','but','and','or','if','then','so','than','too','very','just','only','also',\n  'select','from','where','join','insert','update','delete','into','values','set','on','as','in','to','of','by','at']);\n\nfunction resolveTable(name) {\n  if (!name) return null;\n  const cleanName = name.replace(/[\\[\\]']/g, '').trim().toLowerCase();\n  const normalizedSearch = cleanName.replace(/_/g, '');\n  \n  // 1. Exact match with schema prefix (ignoring underscores)\n  let match = tableNames.find(t => {\n    const tNorm = t.toLowerCase().replace(/_/g, '');\n    return tNorm === normalizedSearch;\n  });\n  if (match) return match;\n\n  // 2. Exact match with pure table name (ignoring underscores)\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return pure === normalizedSearch;\n  });\n  if (match) return match;\n\n  // 3. Substring match (ignoring underscores)\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return (pure.includes(normalizedSearch) && normalizedSearch.length >= 4) || (normalizedSearch.includes(pure) && pure.length >= 4);\n  });\n  if (match) return match;\n\n  // 4. Singularized match (ignoring underscores)\n  const singular = cleanName.endsWith('ies') ? cleanName.slice(0, -3) + 'y' : (cleanName.endsWith('s') ? cleanName.slice(0, -1) : cleanName);\n  const normalizedSingular = singular.replace(/_/g, '');\n  match = tableNames.find(t => {\n    const pure = t.split('.').pop().toLowerCase().replace(/_/g, '');\n    return pure === normalizedSingular;\n  });\n  if (match) return match;\n\n  // 5. Fuzzy distance match\n  const results = tableNames.map(t => {\n    const pure = t.toLowerCase().split('.').pop().replace(/_/g, '');\n    const dist = Math.min(lev(cleanName.replace(/_/g, ''), pure), lev(cleanName.replace(/_/g, ''), t.toLowerCase().replace(/_/g, '')));\n    return { table: t, dist };\n  }).sort((a,b) => a.dist - b.dist);\n\n  if (results.length && results[0].dist <= 2) {\n    return results[0].table;\n  }\n  \n  return null;\n}\n\nfunction findSimilarTables(term, maxN=3) {\n  const tl = term.toLowerCase().trim().replace(/_/g, '');\n  return tableNames.map(t => {\n    const pure = t.toLowerCase().split('.').pop().replace(/_/g, '');\n    const dist = Math.min(lev(tl, pure), lev(tl, t.toLowerCase().replace(/_/g, '')));\n    return { table: t, dist };\n  }).sort((a,b) => a.dist - b.dist).slice(0, maxN);\n}\n\n// Extract SQL tables (bracket-clean version)\nfunction extractTablesFromSQL(sql){\n  const cleanSql = sql.replace(/[\\[\\]]/g, '');\n  const t=new Set();let m;\n  const r1=/(?:FROM|JOIN|INTO|UPDATE|MERGE)\\s+([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_]+)/gi;\n  while((m=r1.exec(cleanSql))!==null) t.add(`${m[1]}.${m[2]}`);\n  const r2=/(?:FROM|JOIN|INTO|UPDATE|MERGE)\\s+([a-zA-Z0-9_]+)(?!\\s*\\.)/gi;\n  while((m=r2.exec(cleanSql))!==null){if(!STOP.has(m[1].toLowerCase())) t.add(m[1]);}\n  return[...t];\n}\n\n// Auto-correct double schema or subtable typos (e.g. article.Articlee.CalculatedStockBalance -> article.CalculatedStockBalance)\nfunction cleanSqlTableTypos(sql) {\n  let cleaned = sql;\n  \n  // Match three-part names: schema.table.subtable or schema.table.column\n  const threePartRegex = /\\b([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_]+)\\b/gi;\n  let match;\n  while ((match = threePartRegex.exec(sql)) !== null) {\n    const [full, part1, part2, part3] = match;\n    \n    // Case 1: part1.part3 is a valid table (e.g. article.CalculatedStockBalance)\n    const candidate1 = `${part1}.${part3}`;\n    const resolved1 = resolveTable(candidate1);\n    if (resolved1) {\n      cleaned = cleaned.replace(new RegExp(`\\\\b${full}\\\\b`, 'g'), resolved1);\n      continue;\n    }\n    \n    // Case 2: part1.part2 is a valid table (e.g. security.User)\n    const candidate2 = `${part1}.${part2}`;\n    const resolved2 = resolveTable(candidate2);\n    if (resolved2) {\n      cleaned = cleaned.replace(new RegExp(`\\\\b${part1}\\\\.${part2}\\\\b`, 'g'), resolved2);\n    }\n  }\n  \n  // Match two-part names and resolve/correct them\n  const twoPartRegex = /\\b([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_]+)\\b/gi;\n  while ((match = twoPartRegex.exec(cleaned)) !== null) {\n    const [full, part1, part2] = match;\n    if (SCHEMAS.has(part1.toLowerCase())) {\n      const resolved = resolveTable(full);\n      if (resolved && resolved !== full) {\n        cleaned = cleaned.replace(new RegExp(`\\\\b${full}\\\\b`, 'g'), resolved);\n      }\n    }\n  }\n  \n  return cleaned;\n}\n\n// ============ COMPREHENSIVE SQL VALIDATOR ============\nfunction validateAndCorrectSQL(sql) {\n  // Pre-clean double schema / subtable typos\n  let correctedSql = cleanSqlTableTypos(sql);\n  \n  const checks = [];\n  const errors = [];\n  const warnings = [];\n  \n  // 1. Extract and validate all tables\n  const tableRefs = extractTablesFromSQL(correctedSql);\n  const resolvedTables = [];\n  \n  for (const ref of tableRefs) {\n    const resolved = resolveTable(ref);\n    if (!resolved) {\n      if (ref.toLowerCase().startsWith('sys.') || ref.toLowerCase().startsWith('information_schema.')) {\n        checks.push(`\u2713 System table \\`${ref}\\` \u2014 allowed`);\n        continue;\n      }\n      const sim = findSimilarTables(ref, 3);\n      errors.push(`\u274c Table \\`${ref}\\` does not exist.${sim.length ? ' Did you mean: ' + sim.map(s => `\\`${s.table}\\``).join(', ') + '?' : ''}`);\n      checks.push(`\u2717 Table \\`${ref}\\` \u2014 NOT FOUND`);\n    } else {\n      resolvedTables.push(resolved);\n      checks.push(`\u2713 Table \\`${resolved}\\` \u2014 exists`);\n      if (resolved !== ref) {\n        const escapedRef = ref.replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&');\n        correctedSql = correctedSql.replace(new RegExp(escapedRef, 'gi'), resolved);\n        checks.push(`  \u21b3 Auto-corrected from \\`${ref}\\``);\n      }\n    }\n  }\n  \n  // 2. Validate columns for each resolved table\n  const sqlKeywords = new Set([\n    'select', 'from', 'where', 'join', 'on', 'and', 'or', 'as', 'inner', 'left', 'right', 'outer', 'full', 'cross',\n    'group', 'by', 'having', 'order', 'asc', 'desc', 'limit', 'top', 'count', 'sum', 'avg', 'min', 'max', 'null',\n    'is', 'not', 'in', 'between', 'like', 'exists', 'into', 'values', 'insert', 'update', 'delete', 'set',\n    'cast', 'convert', 'coalesce', 'isnull', 'case', 'when', 'then', 'else', 'end', 'for', 'json', 'path',\n    'sys', 'tables', 'columns', 'types', 'foreign', 'keys', 'indexes', 'partitions', 'schema_name', 'string_agg',\n    'getdate', 'current_timestamp', 'dateadd', 'datediff', 'datepart', 'year', 'month', 'day', 'concat',\n    'len', 'lower', 'upper', 'ltrim', 'rtrim', 'trim', 'replace', 'substring', 'charindex', 'stuff',\n    'row_number', 'rank', 'dense_rank', 'over', 'partition', 'declare', 'int', 'nvarchar', 'bit', 'datetime',\n    'float', 'decimal', 'varchar', 'char', 'text', 'ntext', 'money', 'smallint', 'bigint', 'tinyint',\n    'begin', 'end', 'if', 'while', 'return', 'print', 'exec', 'execute', 'procedure', 'function'\n  ]);\n\n  const sqlWords = correctedSql.replace(/[\\[\\]]/g, '').match(/\\b[a-zA-Z_][a-zA-Z0-9_]*\\b/g) || [];\n  \n  for (const w of sqlWords) {\n    const wl = w.toLowerCase();\n    if (sqlKeywords.has(wl) || STOP.has(wl) || wl.length <= 2) continue;\n    \n    if (resolvedTables.some(t => t.toLowerCase().split('.').pop() === wl || t.toLowerCase() === wl)) continue;\n    if (resolvedTables.some(t => t.toLowerCase().split('.')[0] === wl)) continue;\n    \n    let isColumn = false;\n    let colTable = '';\n    let colNullable = '';\n    for (const t of resolvedTables) {\n      const cols = columns.filter(c => c.table_name === t);\n      const found = cols.find(c => c.column_name.toLowerCase() === wl);\n      if (found) {\n        isColumn = true;\n        colTable = t;\n        colNullable = found.is_nullable;\n        break;\n      }\n    }\n    \n    if (isColumn) {\n      checks.push(`\u2713 Column \\`${w}\\` \u2014 exists in \\`${colTable}\\` (${colNullable === 'YES' ? 'Nullable' : 'Not Null'})`);\n    } else if (resolvedTables.length > 0) {\n      let closestCol = null;\n      let minDistance = 999;\n      let bestTable = '';\n      \n      for (const t of resolvedTables) {\n        const cols = columns.filter(c => c.table_name === t);\n        for (const c of cols) {\n          const colName = c.column_name.toLowerCase();\n          const dist = lev(wl, colName);\n          if (dist < minDistance && dist <= 2) {\n            minDistance = dist;\n            closestCol = c.column_name;\n            bestTable = t;\n          }\n        }\n      }\n      \n      if (closestCol) {\n        warnings.push(`\u26a0\ufe0f Possible column typo: \\`${w}\\` \u2192 did you mean \\`${closestCol}\\` in \\`${bestTable}\\`?`);\n      }\n    }\n  }\n\n  // 3. Validate FK references used in JOINs\n  const joinPattern = /JOIN\\s+([a-zA-Z0-9_]+\\.?[a-zA-Z0-9_]+)\\s+.*?ON\\s+([a-zA-Z0-9_.]+)\\s*=\\s*([a-zA-Z0-9_.]+)/gi;\n  const cleanSql = correctedSql.replace(/[\\[\\]]/g, '');\n  let jm;\n  while ((jm = joinPattern.exec(cleanSql)) !== null) {\n    const leftRef = jm[2];\n    const rightRef = jm[3];\n    \n    const leftParts = leftRef.split('.');\n    const rightParts = rightRef.split('.');\n    const leftCol = leftParts[leftParts.length - 1];\n    const rightCol = rightParts[rightParts.length - 1];\n    \n    const fkExists = foreignKeys.some(fk => \n      (fk.source_column.toLowerCase() === leftCol.toLowerCase() && fk.target_column.toLowerCase() === rightCol.toLowerCase()) ||\n      (fk.source_column.toLowerCase() === rightCol.toLowerCase() && fk.target_column.toLowerCase() === leftCol.toLowerCase())\n    );\n    \n    if (fkExists) {\n      checks.push(`\u2713 FK \\`${leftCol}\\` \u2194 \\`${rightCol}\\` \u2014 verified`);\n    } else {\n      warnings.push(`\u26a0\ufe0f FK \\`${leftCol}\\` \u2194 \\`${rightCol}\\` \u2014 not verified in metadata (may still work)`);\n    }\n  }\n\n  // 4. Check PK usage\n  for (const t of resolvedTables) {\n    const pks = primaryKeys.filter(pk => pk.table_name === t);\n    if (pks.length > 0) {\n      checks.push(`\u2713 PK for \\`${t}\\`: \\`${pks.map(p => p.column_name).join(', ')}\\``);\n    }\n  }\n  \n  // 5. Execution risk assessment\n  let risk = 'LOW';\n  const upperSql = correctedSql.toUpperCase();\n  if (upperSql.includes('DELETE') || upperSql.includes('DROP') || upperSql.includes('TRUNCATE')) {\n    risk = 'HIGH \u2014 Destructive operation detected';\n  } else if (upperSql.includes('UPDATE') || upperSql.includes('INSERT')) {\n    risk = 'MEDIUM \u2014 Write operation detected';\n  } else if (upperSql.includes('SELECT *') && !upperSql.includes('TOP') && !upperSql.includes('WHERE')) {\n    risk = 'MEDIUM \u2014 Full table scan (no WHERE/TOP clause)';\n  }\n  checks.push(`\u2713 Execution Risk: **${risk}**`);\n\n  return {\n    valid: errors.length === 0,\n    correctedSql,\n    errors,\n    warnings,\n    checks\n  };\n}\n\ntry {\n  const jsonMatch = raw.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    if (parsed.answer) {\n      answer = parsed.answer;\n      generatedSql = parsed.sql || \"\";\n      confidence = parsed.confidence || 85;\n    } else {\n      answer = raw;\n    }\n  } else {\n    answer = raw;\n  }\n} catch(e) {\n  answer = raw || \"I processed your request.\";\n}\n\n// Validate generated SQL if present\nif (generatedSql && generatedSql.trim() !== \"\") {\n  const validation = validateAndCorrectSQL(generatedSql);\n  \n  // Block unverified joins: if FK isn't verified in the metadata, don't automatically join\n  const hasUnverifiedJoin = validation.warnings.some(w => w.includes('not verified in metadata'));\n  if (hasUnverifiedJoin) {\n    generatedSql = \"\";\n    answer = \"Relationship cannot be verified. Additional metadata is required to join these tables.\";\n  } else {\n    generatedSql = validation.correctedSql;\n    answer += `\\n\\n\\`\\`\\`sql\\n${generatedSql}\\n\\`\\`\\``;\n    answer += `\\n\\n\ud83d\udccb **SQL Validation Checklist:**\\n${validation.checks.map(c => `  ${c}`).join('\\n')}`;\n    \n    if (validation.errors.length > 0) {\n      answer += `\\n\\n\u274c **Validation Errors:**\\n${validation.errors.join('\\n')}`;\n    }\n    if (validation.warnings.length > 0) {\n      answer += `\\n\\n\u26a0\ufe0f **Warnings:**\\n${validation.warnings.join('\\n')}`;\n    }\n  }\n}\n\nreturn [{\n  json: {\n    session_id: promptData.session_id,\n    answer: answer,\n    answer_sql: answer.replace(/'/g, \"''\"),\n    question: promptData.question,\n    confidence: confidence,\n    mode: promptData.intent || 'ai'\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        18720,
+        3168
+      ],
+      "id": "fdb35300-9b55-4266-9b26-0ae5963be1ce",
+      "name": "Format Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{\n{\n  session_id: Number($json.session_id || 0),\n  answer: $json.answer || \"I processed your request.\",\n  question: $json.question || \"\",\n  confidence: Number($json.confidence || 50),\n  mode: $json.mode || \"assistant\"\n}\n}}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, PUT, DELETE, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        18944,
+        3168
+      ],
+      "id": "47469f8e-9e48-4ffa-9caa-1f6294004c8a",
+      "name": "Return Response"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_messages (session_id, sender, message)\nVALUES ({{ $json.session_id }}, 'assistant', '{{ $json.answer_sql }}');",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        19168,
+        3168
+      ],
+      "id": "971f1d76-3351-4042-ba2a-9549b1c7df67",
+      "name": "Save Message"
+    },
+    {
+      "parameters": {
+        "path": "notifications-api",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "OPTIONS,GET,PUT,POST,DELETE"
+              }
+            ]
+          },
+          "responseMode": "responseNode"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        16496,
+        3456
+      ],
+      "id": "f6c19258-b095-47e1-9ead-f0aad63b0868",
+      "name": "Notification Webhook",
+      "webhookId": "52a9e373-30f1-4ee7-98b7-f63a4c714a8e"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst query = input.query || {};\nconst operation = query.operation || 'list';\nconst limit = parseInt(query.limit) || 50;\nconst id = parseInt(query.id) || 0;\nconst unreadOnly = query.unread_only === 'true';\n\nlet sql = '';\n\nswitch(operation) {\n  case 'list':\n    sql = unreadOnly\n      ? `SELECT TOP (${limit}) * FROM notifications WHERE is_read = 0 ORDER BY created_at DESC`\n      : `SELECT TOP (${limit}) * FROM notifications ORDER BY created_at DESC`;\n    break;\n  case 'mark_read':\n    sql = `UPDATE notifications SET is_read = 1 OUTPUT inserted.id, inserted.is_read, inserted.created_at, inserted.message, inserted.title WHERE id = ${id}`;\n    break;\n  case 'mark_all_read':\n    sql = `UPDATE notifications SET is_read = 1 OUTPUT inserted.id, inserted.is_read, inserted.created_at, inserted.message, inserted.title WHERE is_read = 0`;\n    break;\n  case 'delete':\n    sql = `DELETE FROM notifications OUTPUT deleted.id WHERE id = ${id}`;\n    break;\n  case 'count':\n    sql = `SELECT COUNT(*) as unread FROM notifications WHERE is_read = 0`;\n    break;\n  default:\n    sql = `SELECT 0 as error`;\n}\n\nreturn [{ json: { sql, operation } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16752,
+        3456
+      ],
+      "id": "9dc257cd-7fe8-486c-9382-df9adfad0094",
+      "name": "Build Notification SQL"
+    },
+    {
+      "parameters": {
+        "jsCode": "const operation = $('Build Notification SQL').first().json.operation;\nconst rows = $input.all().map(item => item.json);\n\nif (operation === 'count') {\n  return [{ json: { unread: rows[0]?.unread || 0 } }];\n}\n\nif (operation === 'mark_read') {\n  return [{ json: { success: true, notification: rows[0] || null } }];\n}\n\nif (operation === 'mark_all_read') {\n  return [{ \n    json: { \n      success: true, \n      message: `${rows.length} notifications marked as read`,\n      updatedCount: rows.length,\n      refresh: true\n    } \n  }];\n}\n\nif (operation === 'delete') {\n  return [{ json: { success: true, message: 'Notification deleted' } }];\n}\n\n// list - wrap array in object\nreturn [{ json: { data: rows } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        17216,
+        3456
+      ],
+      "id": "9dbc22d9-320d-4d08-b73a-4042a091cea6",
+      "name": "Format Notification Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        17456,
+        3456
+      ],
+      "id": "77f630c0-029b-4063-988c-25454c891b21",
+      "name": "Send Notification Response"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        18160,
+        3376
+      ],
+      "id": "e9ad413b-0687-49f6-b510-8390e33cd47b",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        16976,
+        3456
+      ],
+      "id": "f7b8263a-fb37-495b-9b3d-e99c75a0fa17",
+      "name": "Run Notification Query",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "path": "mssql-ai-chat",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "OPTIONS,GET,PUT,POST,DELETE"
+              }
+            ]
+          },
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "446b44ca-a60b-42e2-9d6f-72757f269b9a",
+      "name": "MSSQL Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        1000
+      ],
+      "webhookId": "9aba5422-5b71-4406-b721-ffcac95423b0"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS;",
+        "options": {}
+      },
+      "id": "20c35f09-2d60-43c0-9016-16c772dc56c2",
+      "name": "Get MSSQL Schema",
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1,
+      "position": [
+        400,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const schema = $input.all().map(i => i.json);\nreturn { json: { schema_str: JSON.stringify(schema, null, 2), question: $('MSSQL Chat Webhook').item.json.body.message || '' } };"
+      },
+      "id": "3f3e2f62-9d66-40de-b96e-72e721f92cc2",
+      "name": "Format Schema for AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=#= You are an expert MS SQL Database Administrator (DBA). \n\nHere is the complete MS SQL schema of the user's database: \n\n{{ $json.schema_str }}\n\nAnswer the user's question accurately. Compare existing tables with any new structures the user suggests. Suggest indexes and best practices."
+        }
+      },
+      "id": "0fa33066-3695-448f-8fe2-5ea81159bf13",
+      "name": "Groq DBA AI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        800,
+        1150
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.question }}"
+      },
+      "id": "e857d5ac-a18a-4f6e-9ba3-248431c2ad43",
+      "name": "DBA Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        800,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"answer\": \"{{ $json.text }}\"\n}",
+        "options": {}
+      },
+      "id": "bfff6e8c-1d70-4870-9c33-ae39dba6a158",
+      "name": "Respond to MSSQL Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        1000
+      ]
+    }
+  ],
+  "connections": {
+    "Save User Message1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Schema Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle CORS": {
+      "main": [
+        [
+          {
+            "node": "Prepare Chat Input1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Handle CORS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Chat Input1": {
+      "main": [
+        [
+          {
+            "node": "Save User Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Schema Data": {
+      "main": [
+        [
+          {
+            "node": "Process Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Intent": {
+      "main": [
+        [
+          {
+            "node": "Build Minimal Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Minimal Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Return Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Response": {
+      "main": [
+        [
+          {
+            "node": "Save Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notification Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Notification SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Notification SQL": {
+      "main": [
+        [
+          {
+            "node": "Run Notification Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Notification Response": {
+      "main": [
+        [
+          {
+            "node": "Send Notification Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Notification Query": {
+      "main": [
+        [
+          {
+            "node": "Format Notification Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MSSQL Chat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get MSSQL Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get MSSQL Schema": {
+      "main": [
+        [
+          {
+            "node": "Format Schema for AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Schema for AI": {
+      "main": [
+        [
+          {
+            "node": "DBA Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DBA Chain": {
+      "main": [
+        [
+          {
+            "node": "Respond to MSSQL Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq DBA AI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "DBA Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "578d3c1db5ca3dfeae4321cd5f6ee21db1269db0a5de87c2d8d50ec3cd51efbf"
+  }
+}

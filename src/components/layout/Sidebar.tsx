@@ -38,10 +38,10 @@ interface SidebarProps {
 export default function Sidebar({ isCollapsed, isOpen = false, onClose }: SidebarProps) {
   const { role } = useAuth();
   
-  const currentBottomItems = [...bottomItems];
-  if (role === 'superadmin') {
-    currentBottomItems.unshift({ name: 'Audit & Users', path: '/dashboard/audit', icon: Shield });
-  }
+  const currentBottomItems = [
+    ...(role === 'superadmin' ? [{ name: 'Audit & Users', path: '/dashboard/audit', icon: Shield }] : []),
+    ...bottomItems
+  ];
 
   return (
     <div className={cn(

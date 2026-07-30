@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, User, Send, Paperclip, FileText, Trash2, Plus, Search, MessageSquare, Menu, X, Pin, Edit2, Download, Loader2, Database, ShieldAlert, Server } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
 
 interface Message {
   id: number;
@@ -163,7 +162,8 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
       }
     }
 
-    fetch('/webhook/chat-history', {
+    const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+    fetch(chatHistoryUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operation: 'get_history', domain: domain })
@@ -249,7 +249,8 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
     setActiveThreadId(newId);
 
     // Save session to PostgreSQL via n8n
-    fetch('/webhook/chat-history', {
+    const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+    fetch(chatHistoryUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -382,7 +383,9 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
   };
 
   const fetchN8nAIResponse = async (query: string, currentThreadId: string): Promise<{ text: string; session_id?: number }> => {
-    const endpoint = domain === 'database' ? '/webhook/erp-chat' : '/webhook/sre-chatbot';
+    const endpoint = domain === 'database' 
+      ? (import.meta.env.VITE_N8N_DB_URL || 'http://localhost:5678/webhook/erp-chat')
+      : (import.meta.env.VITE_N8N_SERVER_URL || 'http://localhost:5678/webhook/sre-chatbot');
     
     // Check if currentThreadId is a numeric session ID (from n8n database)
     const numSessionId = parseInt(currentThreadId.replace('session_', ''));
@@ -400,7 +403,8 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
       });
 
       if (response.ok) {
-        const rawData = await response.json();
+        const text = await response.text();
+        const rawData = text ? JSON.parse(text) : {};
         const extracted = extractTextFromN8nData(rawData);
         if (extracted.text) return extracted;
       }
@@ -459,7 +463,8 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
     }
 
     // Persist message to PostgreSQL erp_demo via n8n
-    fetch('/webhook/chat-history', {
+    const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+    fetch(chatHistoryUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -540,16 +545,24 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
     processUserMessage(editingMessageText);
   };
 
-  const exportPDF = () => {
-    if (!chatContainerRef.current) return;
-    const opt = {
-      margin:       0.5,
-      filename:     `${activeThread?.title || 'Chat'}.pdf`,
-      image:        { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' as const }
-    };
-    html2pdf().set(opt).from(chatContainerRef.current).save();
+  const exportMarkdown = () => {
+    if (!activeThread || activeThread.messages.length === 0) return;
+    
+    let content = `# ${activeThread.title}\n\n`;
+    content += `*Exported on: ${new Date().toLocaleString()}*\n\n---\n\n`;
+    
+    activeThread.messages.forEach(msg => {
+      const sender = msg.sender === 'user' ? '👤 User' : '🤖 AI Assistant';
+      content += `### ${sender} [${msg.timestamp}]\n\n${msg.text}\n\n---\n\n`;
+    });
+    
+    const element = document.createElement("a");
+    const file = new Blob([content], { type: 'text/markdown' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${activeThread.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_chat.md`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   const filteredThreads = threads.filter(t => 
@@ -696,9 +709,9 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
           </div>
           <div className="flex items-center">
             <button
-              onClick={exportPDF}
+              onClick={exportMarkdown}
               className="flex items-center px-3 py-1.5 bg-surface border border-border text-textSecondary hover:text-textPrimary hover:bg-surfaceHover rounded-md text-sm font-medium transition-colors shadow-sm"
-              title="Download as PDF"
+              title="Download as Markdown"
             >
               <Download className="w-4 h-4 mr-2" />
               Export

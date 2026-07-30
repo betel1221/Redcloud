@@ -10,40 +10,6 @@ export default function DatabaseMonitoring() {
   const [servers, setServers] = useState<ServerTelemetry[]>([]);
   const [companyDatabases, setCompanyDatabases] = useState<DatabaseMetadata[]>([]);
 
-  // Default 3 real databases — used when n8n is not responding
-  const defaultDatabases: DatabaseMetadata[] = [
-    {
-      name: 'FOODAPPANDDB',
-      type: 'MS SQL Server 2022',
-      status: 'Online & Operational',
-      storage: '—',
-      tables: 0,
-      connections: '—',
-      replication: 'Primary MS SQL',
-      backup: '—'
-    },
-    {
-      name: 'erp_demo',
-      type: 'PostgreSQL 15',
-      status: 'Online & Synchronized',
-      storage: '—',
-      tables: 0,
-      connections: '—',
-      replication: 'Streaming (Chat & Auth)',
-      backup: '—'
-    },
-    {
-      name: 'server_metrics',
-      type: 'PostgreSQL 15',
-      status: 'Online & Active',
-      storage: '—',
-      tables: 0,
-      connections: '—',
-      replication: 'Streaming (Telemetry)',
-      backup: '—'
-    }
-  ];
-
   useEffect(() => {
     setLoading(true);
 
@@ -54,11 +20,10 @@ export default function DatabaseMonitoring() {
     ])
       .then(([serverData, dbMeta]) => {
         setServers(serverData);
-        // Use real n8n data if available, otherwise show defaults
-        setCompanyDatabases(dbMeta.length > 0 ? dbMeta : defaultDatabases);
+        setCompanyDatabases(dbMeta || []);
       })
       .catch(() => {
-        setCompanyDatabases(defaultDatabases);
+        setCompanyDatabases([]);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -91,30 +56,14 @@ export default function DatabaseMonitoring() {
     }
   };
 
-  // Largest Tables Metrics (Real DB tables)
-  const largestTables = [
-    { name: 'dbo.ChatMessages', schema: 'dbo (FOODAPPANDDB)', size: '850 MB', rows: '640,000' },
-    { name: 'public.server_metrics', schema: 'public (server_metrics)', size: '540 MB', rows: '480,000' },
-    { name: 'public.chat_messages', schema: 'public (erp_demo)', size: '320 MB', rows: '220,000' },
-    { name: 'public.erp_users', schema: 'public (erp_demo)', size: '45 MB', rows: '1,400' }
-  ];
+  // Largest Tables Metrics (Real DB tables) - To be fetched from API
+  const largestTables: any[] = [];
 
-  // AI Recommendations
-  const aiRecommendations = [
-    {
-      title: 'Index Optimization (FOODAPPANDDB)',
-      impact: 'High Impact (-42% query time)',
-      desc: 'Add index `CREATE INDEX idx_chat_messages ON dbo.ChatMessages(created_at DESC)` to decrease chat lookup latency.'
-    },
-    {
-      title: 'Autovacuum Tuning (erp_demo)',
-      impact: 'Medium Impact (-15% disk bloating)',
-      desc: 'Run `VACUUM ANALYZE chat_messages` to reclaim dead tuples and refresh query statistics.'
-    }
-  ];
+  // AI Recommendations - To be fetched from API
+  const aiRecommendations: any[] = [];
 
   // Compute KPIs from fetched database metadata
-  const totalDbCount = companyDatabases.length || 3;
+  const totalDbCount = companyDatabases.length;
   const totalTables = companyDatabases.reduce((sum, db) => sum + (db.tables || 0), 0);
   const totalStorage = companyDatabases.some(db => db.storage !== '—')
     ? companyDatabases.map(db => db.storage).filter(s => s !== '—').join(' + ')
@@ -311,17 +260,21 @@ export default function DatabaseMonitoring() {
               <span className="text-[10px] text-textSecondary">By Disk Size</span>
             </div>
             <div className="space-y-2.5">
-              {largestTables.map((tbl, i) => (
-                <div key={i} className="p-2.5 border border-border rounded-lg bg-surfaceHover/40 flex justify-between items-center">
-                  <div>
-                    <p className="text-xs font-bold text-textPrimary font-mono">{tbl.name}</p>
-                    <p className="text-[10px] text-textSecondary">{tbl.rows} rows</p>
+              {largestTables.length === 0 ? (
+                <p className="text-xs text-textSecondary text-center py-4">No data available from backend.</p>
+              ) : (
+                largestTables.map((tbl, i) => (
+                  <div key={i} className="p-2.5 border border-border rounded-lg bg-surfaceHover/40 flex justify-between items-center">
+                    <div>
+                      <p className="text-xs font-bold text-textPrimary font-mono">{tbl.name}</p>
+                      <p className="text-[10px] text-textSecondary">{tbl.rows} rows</p>
+                    </div>
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                      {tbl.size}
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                    {tbl.size}
-                  </span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -332,17 +285,21 @@ export default function DatabaseMonitoring() {
               <h2 className="text-xs font-bold text-textPrimary uppercase tracking-wider">AI Recommendations</h2>
             </div>
             <div className="space-y-3">
-              {aiRecommendations.map((rec, i) => (
-                <div key={i} className="p-3 border border-border rounded-lg bg-surface/60 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-textPrimary">{rec.title}</span>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                      {rec.impact}
-                    </span>
+              {aiRecommendations.length === 0 ? (
+                <p className="text-xs text-textSecondary text-center py-4">No AI recommendations at this time.</p>
+              ) : (
+                aiRecommendations.map((rec, i) => (
+                  <div key={i} className="p-3 border border-border rounded-lg bg-surface/60 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-textPrimary">{rec.title}</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                        {rec.impact}
+                      </span>
+                    </div>
+                    <p className="text-xs text-textSecondary leading-relaxed">{rec.desc}</p>
                   </div>
-                  <p className="text-xs text-textSecondary leading-relaxed">{rec.desc}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

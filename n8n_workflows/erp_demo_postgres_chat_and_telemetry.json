@@ -174,13 +174,7 @@
         1088,
         576
       ],
-      "id": "23e46ab6-3cf8-4f31-ab25-2971183531c4",
-      "credentials": {
-        "postgres": {
-          "id": "8iTlMr0iXe0MIskR",
-          "name": "Postgres account 5"
-        }
-      }
+      "id": "23e46ab6-3cf8-4f31-ab25-2971183531c4"
     },
     {
       "parameters": {
@@ -195,13 +189,7 @@
         1088,
         720
       ],
-      "id": "9629774b-f0e1-480c-9ef1-407c300970d2",
-      "credentials": {
-        "postgres": {
-          "id": "8iTlMr0iXe0MIskR",
-          "name": "Postgres account 5"
-        }
-      }
+      "id": "9629774b-f0e1-480c-9ef1-407c300970d2"
     },
     {
       "parameters": {
@@ -216,13 +204,7 @@
         1088,
         864
       ],
-      "id": "80872eda-594c-4ed9-9f26-d9026a3ba06f",
-      "credentials": {
-        "postgres": {
-          "id": "8iTlMr0iXe0MIskR",
-          "name": "Postgres account 5"
-        }
-      }
+      "id": "80872eda-594c-4ed9-9f26-d9026a3ba06f"
     },
     {
       "parameters": {
@@ -237,18 +219,12 @@
         1088,
         1008
       ],
-      "id": "5302b9f8-b13b-4a3a-acd6-6ea646dde5b2",
-      "credentials": {
-        "postgres": {
-          "id": "8iTlMr0iXe0MIskR",
-          "name": "Postgres account 5"
-        }
-      }
+      "id": "5302b9f8-b13b-4a3a-acd6-6ea646dde5b2"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT d.datname AS name,\n  'PostgreSQL 15' AS type,\n  CASE WHEN d.datistemplate THEN 'Template' ELSE 'Online & Active' END AS status,\n  pg_size_pretty(pg_database_size(d.datname)) AS storage,\n  (SELECT COUNT(*) FROM information_schema.tables WHERE table_catalog = d.datname AND table_schema NOT IN ('pg_catalog','information_schema'))::int AS tables,\n  (SELECT count(*) FROM pg_stat_activity WHERE datname = d.datname)::text || ' / ' || current_setting('max_connections') AS connections,\n  CASE WHEN (SELECT count(*) FROM pg_stat_replication) > 0 THEN 'Streaming' ELSE 'Standalone' END AS replication,\n  COALESCE((SELECT pg_size_pretty(pg_database_size(d.datname))), '—') AS backup\nFROM pg_database d\nWHERE d.datname IN ('erp_demo', 'server_metrics', 'FOODAPPANDDB')\nORDER BY d.datname;",
+        "query": "SELECT d.datname AS name,\n  'PostgreSQL 15' AS type,\n  CASE WHEN d.datistemplate THEN 'Template' ELSE 'Online & Active' END AS status,\n  pg_size_pretty(pg_database_size(d.datname)) AS storage,\n  (SELECT COUNT(*) FROM information_schema.tables WHERE table_catalog = d.datname AND table_schema NOT IN ('pg_catalog','information_schema'))::int AS tables,\n  (SELECT count(*) FROM pg_stat_activity WHERE datname = d.datname)::text || ' / ' || current_setting('max_connections') AS connections,\n  CASE WHEN (SELECT count(*) FROM pg_stat_replication) > 0 THEN 'Streaming' ELSE 'Standalone' END AS replication,\n  COALESCE((SELECT pg_size_pretty(pg_database_size(d.datname))), '\u2014') AS backup\nFROM pg_database d\nWHERE d.datname IN ('erp_demo', 'server_metrics', 'FOODAPPANDDB')\nORDER BY d.datname;",
         "additionalFields": {}
       },
       "name": "Postgres Get DB Metadata",
@@ -258,13 +234,7 @@
         1088,
         1232
       ],
-      "id": "af60e8f9-2957-4c3b-9a83-4e3450813740",
-      "credentials": {
-        "postgres": {
-          "id": "8iTlMr0iXe0MIskR",
-          "name": "Postgres account 5"
-        }
-      }
+      "id": "af60e8f9-2957-4c3b-9a83-4e3450813740"
     },
     {
       "parameters": {

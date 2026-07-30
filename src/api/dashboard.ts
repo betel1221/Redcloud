@@ -50,8 +50,9 @@ export interface ServerTelemetry {
   };
 }
 
-const N8N_NOTIFICATION_ENDPOINT = '/webhook/notifications-api';
-const N8N_SRE_ENDPOINT = '/webhook/sre-chatbot';
+const N8N_NOTIFICATION_ENDPOINT = import.meta.env.VITE_N8N_NOTIFICATIONS_URL || '/webhook/notifications-api';
+const N8N_SRE_ENDPOINT = import.meta.env.VITE_N8N_SERVER_URL || '/webhook/sre-chatbot';
+const N8N_CHAT_HISTORY_ENDPOINT = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || '/webhook/chat-history';
 
 /**
  * Helper: deeply extract text from n8n response objects
@@ -91,7 +92,8 @@ export async function fetchRealNotifications(): Promise<NotificationItem[]> {
   try {
     const res = await fetch(`${N8N_NOTIFICATION_ENDPOINT}?operation=list&limit=20`);
     if (res.ok) {
-      const data = await res.json();
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : [];
       const rawList = Array.isArray(data) ? data : data.data || [];
       if (Array.isArray(rawList) && rawList.length > 0) {
         return rawList.map((item: any) => ({
@@ -119,7 +121,8 @@ export async function fetchUnreadNotificationCount(): Promise<number> {
   try {
     const res = await fetch(`${N8N_NOTIFICATION_ENDPOINT}?operation=count`);
     if (res.ok) {
-      const data = await res.json();
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
       if (typeof data.unread === 'number') return data.unread;
     }
   } catch (err) {
@@ -167,7 +170,8 @@ export async function fetchLiveServerTelemetry(): Promise<ServerTelemetry[]> {
       body: JSON.stringify({ question: 'Show Server Health Report for all servers', server_name: 'all' })
     });
     if (res.ok) {
-      const rawData = await res.json();
+      const text = await res.text();
+      const rawData = text ? JSON.parse(text) : [];
       let data = rawData;
       if (Array.isArray(data) && data.length > 0) data = data[0];
       
@@ -185,114 +189,8 @@ export async function fetchLiveServerTelemetry(): Promise<ServerTelemetry[]> {
     console.warn("n8n sre-chatbot webhook unreachable, trying Zabbix direct...", err);
   }
 
-  // 2. Try Direct Python Zabbix API Simulator (http://localhost:5001/zabbix/api_jsonrpc.php)
-  try {
-    const res = await fetch('/zabbix/api_jsonrpc.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "host.get",
-        params: {
-          output: ["hostid", "host", "name", "status"],
-          selectItems: ["itemid", "name", "key_", "lastvalue", "units"],
-          filter: { status: 0 }
-        },
-        id: 2
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.result && Array.isArray(data.result) && data.result.length > 0) {
-        return data.result.map(parseZabbixHost);
-      }
-    }
-  } catch (err) {
-    console.warn("Zabbix API direct fetch failed, trying secondary fallback...", err);
-  }
-
-  // 3. Try Secondary Server Health Endpoint
-  try {
-    const res = await fetch('/webhook/server-health');
-    if (res.ok) {
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : data.data || [];
-      if (list.length > 0) return list.map(mapServerData);
-    }
-  } catch { /* silent */ }
-
-  // 4. Default Live Telemetry Nodes (Ensures UI displays rich telemetry)
-  return [
-    {
-      server_name: 'Local-SRE-PC (Primary Node)',
-      status: 'Running',
-      cpu: { usage_percent: 24 },
-      memory: { usage_percent: 48, used_mb: 7864, total_mb: 16384 },
-      disk: { usage_percent: 38, total: '500G', used: '190G' },
-      network: '142 Mbps',
-      uptime: '4 days, 12 hours',
-      health_status: 'HEALTHY',
-      temperature_c: 41.5,
-      services: { running: 96, failed: 0 },
-      security: {
-        failed_logins: 4,
-        successful_logins: 1280,
-        blocked_ips: 18,
-        firewall_events: 52,
-        security_alerts: 0,
-        threat_level: 'NORMAL',
-        risk_score: 12,
-        suspicious_users: 0,
-        authentication_activity: 1284
-      }
-    },
-    {
-      server_name: 'ERP-Postgres-Primary',
-      status: 'Running',
-      cpu: { usage_percent: 32 },
-      memory: { usage_percent: 62, used_mb: 20316, total_mb: 32768 },
-      disk: { usage_percent: 54, total: '1000G', used: '540G' },
-      network: '320 Mbps',
-      uptime: '18 days, 6 hours',
-      health_status: 'HEALTHY',
-      temperature_c: 44.0,
-      services: { running: 42, failed: 0 },
-      security: {
-        failed_logins: 12,
-        successful_logins: 4890,
-        blocked_ips: 45,
-        firewall_events: 110,
-        security_alerts: 0,
-        threat_level: 'NORMAL',
-        risk_score: 18,
-        suspicious_users: 0,
-        authentication_activity: 4902
-      }
-    },
-    {
-      server_name: 'MSSQL-ERP-Warehouse',
-      status: 'Running',
-      cpu: { usage_percent: 18 },
-      memory: { usage_percent: 58, used_mb: 19000, total_mb: 32768 },
-      disk: { usage_percent: 42, total: '2000G', used: '840G' },
-      network: '210 Mbps',
-      uptime: '22 days, 1 hour',
-      health_status: 'HEALTHY',
-      temperature_c: 39.8,
-      services: { running: 38, failed: 0 },
-      security: {
-        failed_logins: 2,
-        successful_logins: 3100,
-        blocked_ips: 8,
-        firewall_events: 34,
-        security_alerts: 0,
-        threat_level: 'NORMAL',
-        risk_score: 8,
-        suspicious_users: 0,
-        authentication_activity: 3102
-      }
-    }
-  ];
+  // 2. Return empty array if all fetch attempts fail (no mock data)
+  return [];
 }
 
 function parseZabbixHost(hostNode: any): ServerTelemetry {
@@ -502,14 +400,15 @@ export interface DatabaseMetadata {
  */
 export async function fetchDatabaseMetadata(): Promise<DatabaseMetadata[]> {
   try {
-    const response = await fetch('/webhook/chat-history', {
+    const response = await fetch(N8N_CHAT_HISTORY_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operation: 'get_db_metadata' })
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : [];
       if (Array.isArray(data) && data.length > 0) {
         return data.map((db: any) => ({
           name: db.name || db.database_name || 'Unknown',

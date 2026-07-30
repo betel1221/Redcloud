@@ -33,14 +33,7 @@ export default function DashboardOverview() {
   const [showAnalysis, setShowAnalysis] = useState(false);
 
   const generatePDF = () => {
-    // Mock PDF download
-    const element = document.createElement("a");
-    const file = new Blob(["MOCK PDF CONTENT - RedCloud System Report\n\nPerformance metrics, alerts, and system health."], { type: 'application/pdf' });
-    element.href = URL.createObjectURL(file);
-    element.download = "RedCloud_System_Report.pdf";
-    document.body.appendChild(element); // Required for this to work in FireFox
-    element.click();
-    
+    window.print();
     setReportGenerated(true);
     setTimeout(() => setReportGenerated(false), 3000);
   };
@@ -57,6 +50,8 @@ export default function DashboardOverview() {
         
         const criticalCount = notifsRes.filter((n: any) => n.type === 'critical').length;
         const warningCount = notifsRes.filter((n: any) => n.type === 'warning').length;
+        const mediumCount = notifsRes.filter((n: any) => n.type === 'info').length;
+        const lowCount = notifsRes.filter((n: any) => n.type === 'success' || !n.type).length;
 
         setData({
           performance: mockPerformanceData,
@@ -67,17 +62,17 @@ export default function DashboardOverview() {
             serverStatus: `${serversRes.length} nodes online`,
             securityScore: healthRes.security_score,
             securityStatus: 'Real-time telemetry active',
-            aiSystemRunning: true,
+            aiSystemRunning: healthRes.ai_status === 'Operational',
           },
           alerts: {
-            critical: criticalCount || 1,
-            high: warningCount || 2,
-            medium: 3,
-            low: notifsRes.length
+            critical: criticalCount,
+            high: warningCount,
+            medium: mediumCount,
+            low: lowCount
           },
           recommendation: {
-            title: 'Database Server Memory Usage Optimization.',
-            description: 'n8n monitoring recommends optimizing cache TTL and monitoring worker threads.',
+            title: 'No current AI insights.',
+            description: 'The AI DBA has not detected any immediate anomalies in the current telemetry window.',
           },
           notifications: notifsRes
         });
@@ -143,12 +138,11 @@ export default function DashboardOverview() {
               <h3 className="text-lg font-bold text-textPrimary">AI Insight Analysis</h3>
             </div>
             <p className="text-textSecondary text-sm mb-4 leading-relaxed">
-              Based on historical data patterns over the last 30 days, the database server memory usage peaks heavily during business hours (9AM-5PM). We project a critical threshold breach within 4 days if cache TTL is not optimized.
+              No historical anomalies detected. Database memory usage and telemetry patterns appear normal.
             </p>
             <p className="text-textPrimary text-sm font-medium">Recommended action:</p>
             <ul className="list-disc list-inside text-sm text-textSecondary mt-2 space-y-1">
-              <li>Increase RAM allocation by 16GB</li>
-              <li>Tune Redis caching parameters</li>
+              <li>Continue monitoring</li>
             </ul>
             <button 
               onClick={() => setShowAnalysis(false)}

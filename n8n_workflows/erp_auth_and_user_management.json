@@ -63,13 +63,7 @@
       "position": [
         720,
         150
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "postgres-credentials-id",
-          "name": "ERP PostgreSQL Database"
-        }
-      }
+      ]
     },
     {
       "parameters": {
@@ -94,13 +88,7 @@
       "position": [
         720,
         300
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "postgres-credentials-id",
-          "name": "ERP PostgreSQL Database"
-        }
-      }
+      ]
     },
     {
       "parameters": {
@@ -125,13 +113,7 @@
       "position": [
         720,
         450
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "postgres-credentials-id",
-          "name": "ERP PostgreSQL Database"
-        }
-      }
+      ]
     },
     {
       "parameters": {
@@ -144,13 +126,7 @@
       "position": [
         720,
         600
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "postgres-credentials-id",
-          "name": "ERP PostgreSQL Database"
-        }
-      }
+      ]
     },
     {
       "parameters": {

@@ -12,7 +12,9 @@ export default function SecurityMonitoring() {
     firewall_events: 0,
     security_alerts: 0,
     threat_level: 'NORMAL',
-    risk_score: 0
+    risk_score: 0,
+    suspicious_users: 0,
+    authentication_activity: 0
   });
   const [servers, setServers] = useState<any[]>([]);
 

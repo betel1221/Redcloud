@@ -19,6 +19,8 @@ interface AuthContextType {
   logout: () => void;
   userEmail: string | null;
   role: 'admin' | 'superadmin' | null;
+  avatar: string | null;
+  updateAvatar: (base64Image: string) => Promise<void>;
   needsPasswordChange: boolean;
   setNeedsPasswordChange: (val: boolean) => void;
   passwordRequests: PasswordRequest[];
@@ -27,8 +29,8 @@ interface AuthContextType {
   profileComplete: boolean;
   completeProfile: () => void;
   users: UserAccount[];
-  addUser: (email: string, role: 'admin'|'superadmin', pass: string) => void;
-  updateUserPassword: (email: string, newPass: string) => void;
+  addUser: (email: string, role: 'admin'|'superadmin', pass: string) => Promise<void>;
+  updateUserPassword: (email: string, newPass: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [role, setRole] = useState<'admin' | 'superadmin' | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
   const [passwordRequests, setPasswordRequests] = useState<PasswordRequest[]>([]);
   const [profileComplete, setProfileComplete] = useState<boolean>(false);
@@ -53,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       setUserEmail(data.email);
       setRole(data.role);
+      setAvatar(data.avatar || null);
       setProfileComplete(data.profileComplete || false);
       setNeedsPasswordChange(data.needsPasswordChange || false);
     }
@@ -76,10 +80,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return acc;
       }, []);
       setUsers(uniqueUsers);
-      localStorage.setItem('eraop_users', JSON.stringify(uniqueUsers));
     } else {
-      localStorage.setItem('eraop_users', JSON.stringify([{ email: 'superadmin@company.com', role: 'superadmin', password: 'admin', needsPasswordChange: false }]));
+      setUsers([{ email: 'superadmin@company.com', role: 'superadmin', password: 'admin', needsPasswordChange: false }]);
     }
+    
+    // Fetch users from n8n
+    const fetchUsers = async () => {
+      try {
+        const authUrl = import.meta.env.VITE_N8N_AUTH_URL || 'http://localhost:5678/webhook/erp-auth';
+        const res = await fetch(authUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operation: 'list_users' })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const fetchedUsers = data.map(u => ({
+              email: u.email || u.user_email,
+              role: u.role || 'admin',
+              needsPasswordChange: u.needs_password_change || false
+            }));
+            if (fetchedUsers.length > 0) {
+              setUsers(prev => {
+                const combined = [...prev, ...fetchedUsers];
+                const unique = combined.reduce((acc: UserAccount[], user) => {
+                  const existingIdx = acc.findIndex(u => u.email.toLowerCase() === user.email.toLowerCase());
+                  if (existingIdx >= 0) {
+                    acc[existingIdx] = user;
+                  } else {
+                    acc.push(user);
+                  }
+                  return acc;
+                }, []);
+                localStorage.setItem('eraop_users', JSON.stringify(unique));
+                return unique;
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to fetch users from n8n', e);
+      }
+    };
+    fetchUsers();
     
     setLoading(false);
   }, []);
@@ -93,7 +137,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Try n8n backend PostgreSQL Auth Webhook
     try {
-      const res = await fetch('/webhook/erp-auth', {
+      const authUrl = import.meta.env.VITE_N8N_AUTH_URL || 'http://localhost:5678/webhook/erp-auth';
+      const res = await fetch(authUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operation: 'login', email, password })
@@ -103,32 +148,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data.success && data.user) {
           userRole = data.user.role || userRole;
           needsChange = !!data.user.needs_password_change;
+          if (data.user.avatar) {
+             setAvatar(data.user.avatar);
+          }
           authSuccess = true;
         } else if (data.message) {
+          // If the message is a default N8N message, it means it didn't hit the DB response node
+          if (data.message === 'Workflow was started' || data.message === 'Webhook received') {
+             throw new Error('Database connection failed. Ensure N8N workflow is Active.');
+          }
           throw new Error(data.message);
         }
       }
     } catch (err: any) {
-      if (err.message === 'Invalid credentials' || err.message === 'User not found. Ask Superadmin to create your account.') {
-        throw err;
-      }
-      console.warn("n8n auth webhook unreachable, using dynamic local database fallback:", err);
+      console.error("Authentication failed:", err);
+      throw new Error(err.message || 'Authentication service unreachable.');
     }
 
-    // Local fallback check if n8n was offline
     if (!authSuccess) {
-      if (email !== 'superadmin@company.com') {
-        const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (existingUser) {
-          if (password && existingUser.password && existingUser.password !== password) {
-            throw new Error('Invalid credentials');
-          }
-          userRole = existingUser.role;
-          needsChange = existingUser.needsPasswordChange || false;
-        } else {
-          throw new Error('User not found. Ask Superadmin to create your account.');
-        }
-      }
+       throw new Error('Authentication failed.');
     }
     
     setIsAuthenticated(true);
@@ -138,15 +176,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const savedData = localStorage.getItem('eraop_auth');
     let isProfileComplete = false;
+    let localAvatar = null;
     if (savedData) {
        const pd = JSON.parse(savedData);
        if (pd.email === email && pd.profileComplete) {
          isProfileComplete = true;
        }
+       if (pd.email === email && pd.avatar) {
+         localAvatar = pd.avatar;
+       }
     }
     setProfileComplete(isProfileComplete);
     
-    localStorage.setItem('eraop_auth', JSON.stringify({ email, role: userRole, profileComplete: isProfileComplete, needsPasswordChange: needsChange }));
+    // If backend didn't provide avatar but localstorage has it, load it
+    setAvatar(prev => {
+       const newAvatar = prev || localAvatar;
+       localStorage.setItem('eraop_auth', JSON.stringify({ email, role: userRole, avatar: newAvatar, profileComplete: isProfileComplete, needsPasswordChange: needsChange }));
+       return newAvatar;
+    });
+  };
+
+  const updateAvatar = async (base64Image: string) => {
+    setAvatar(base64Image);
+    const savedData = localStorage.getItem('eraop_auth');
+    if (savedData) {
+      const pd = JSON.parse(savedData);
+      localStorage.setItem('eraop_auth', JSON.stringify({ ...pd, avatar: base64Image }));
+    }
+    if (userEmail) {
+      try {
+        const authUrl = import.meta.env.VITE_N8N_AUTH_URL || 'http://localhost:5678/webhook/erp-auth';
+        await fetch(authUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operation: 'update_avatar', email: userEmail, avatar: base64Image })
+        });
+      } catch (err) {
+        console.warn("Failed to sync avatar to backend", err);
+      }
+    }
   };
 
   const completeProfile = () => {
@@ -160,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(false);
     setUserEmail(null);
     setRole(null);
+    setAvatar(null);
     setProfileComplete(false);
     setNeedsPasswordChange(false);
     localStorage.removeItem('eraop_auth');
@@ -168,7 +237,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const addUser = async (email: string, role: 'admin'|'superadmin', pass: string) => {
     // Sync with n8n backend PostgreSQL DB
     try {
-      await fetch('/webhook/erp-auth', {
+      const authUrl = import.meta.env.VITE_N8N_AUTH_URL || 'http://localhost:5678/webhook/erp-auth';
+      await fetch(authUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operation: 'create_user', email, role, password: pass })
@@ -191,7 +261,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('eraop_users', JSON.stringify(newUsers));
   };
 
-  const updateUserPassword = (email: string, newPass: string) => {
+  const updateUserPassword = async (email: string, newPass: string) => {
+    try {
+      const authUrl = import.meta.env.VITE_N8N_AUTH_URL || 'http://localhost:5678/webhook/erp-auth';
+      await fetch(authUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'update_password', email, password: newPass })
+      });
+    } catch (err) {
+      console.warn("n8n update_password webhook unreachable, writing to local storage state:", err);
+    }
+
     const newUsers = users.map(u => 
       u.email === email ? { ...u, password: newPass, needsPasswordChange: false } : u
     );
@@ -235,7 +316,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ 
-      isAuthenticated, login, logout, userEmail, role, 
+      isAuthenticated, login, logout, userEmail, role, avatar, updateAvatar,
       needsPasswordChange, setNeedsPasswordChange,
       passwordRequests, addPasswordRequest, approvePasswordRequest,
       profileComplete, completeProfile,

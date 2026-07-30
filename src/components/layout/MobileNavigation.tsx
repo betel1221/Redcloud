@@ -2,11 +2,15 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Bot, FileText, Settings } from 'lucide-react';
 
+import { useAuth } from '../../context/AuthContext';
+
 export default function MobileNavigation() {
+  const { role } = useAuth();
+
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Home", end: true },
     { to: "/dashboard/ai", icon: Bot, label: "AI" },
-    { to: "/dashboard/audit", icon: FileText, label: "Audit" },
+    ...(role === 'superadmin' ? [{ to: "/dashboard/audit", icon: FileText, label: "Audit" }] : []),
     { to: "/dashboard/profile", icon: Settings, label: "Settings" }
   ];
 

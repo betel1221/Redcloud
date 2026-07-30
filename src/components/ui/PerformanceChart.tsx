@@ -1,15 +1,7 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export const mockPerformanceData = [
-  { time: '09:00', cpu: 45, memory: 60 },
-  { time: '09:10', cpu: 55, memory: 65 },
-  { time: '09:20', cpu: 40, memory: 62 },
-  { time: '09:30', cpu: 75, memory: 70 },
-  { time: '09:40', cpu: 85, memory: 78 },
-  { time: '09:50', cpu: 92, memory: 82 },
-  { time: '10:00', cpu: 65, memory: 75 },
-];
+export const mockPerformanceData: any[] = [];
 
 interface PerformanceChartProps {
   data?: any[];
