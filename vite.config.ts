@@ -7,7 +7,7 @@ export default defineConfig({
   base: '/Redcloud/',
   plugins: [react(), basicSsl()],
   server: {
-    https: true,
+    https: {},
     port: 5173,
     host: true,
     proxy: {

@@ -26,10 +26,10 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     // Check if the Telegram WebApp object is present and properly initialized.
     // WebApp.initData is only present if opened inside Telegram.
-    const hasWebApp = window.Telegram?.WebApp && window.Telegram.WebApp.initData;
+    const hasWebApp = !!(window as any).Telegram?.WebApp && !!(window as any).Telegram?.WebApp?.initData;
 
     if (hasWebApp) {
-      const app = window.Telegram.WebApp;
+      const app = (window as any).Telegram.WebApp;
       app.ready();
       setIsTelegram(true);
       setWebApp(app);
@@ -64,8 +64,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
 
       // Expose to window for the rest of the application
-      window.Telegram = window.Telegram || {};
-      window.Telegram.WebApp = mockWebApp;
+      (window as any).Telegram = (window as any).Telegram || {};
+      (window as any).Telegram.WebApp = mockWebApp;
 
       setIsTelegram(false); // Keep standard navigation visible for desktop browser debugging
       setWebApp(mockWebApp);
