@@ -24,8 +24,8 @@ export default function Profile() {
   const [maintenance, setMaintenance] = useState(false);
   
   useEffect(() => {
-    setEnforce2fa(localStorage.getItem('eraop_enforce_2fa') === 'true');
-    setMaintenance(localStorage.getItem('eraop_maintenance') === 'true');
+    setEnforce2fa(false);
+    setMaintenance(false);
   }, [userEmail]);
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -68,15 +68,11 @@ export default function Profile() {
   };
 
   const toggle2FA = () => {
-    const newVal = !enforce2fa;
-    setEnforce2fa(newVal);
-    localStorage.setItem('eraop_enforce_2fa', String(newVal));
+    setEnforce2fa(prev => !prev);
   };
 
   const toggleMaintenance = () => {
-    const newVal = !maintenance;
-    setMaintenance(newVal);
-    localStorage.setItem('eraop_maintenance', String(newVal));
+    setMaintenance(prev => !prev);
   };
 
   return (

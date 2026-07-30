@@ -149,19 +149,6 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
   // Load saved threads from PostgreSQL erp_demo via n8n backend endpoint
   useEffect(() => {
     isLoadedRef.current = false;
-    const saved = localStorage.getItem(storageKey);
-    let loadedThreads: ChatThread[] = [];
-    if (saved) {
-      try {
-        const parsed: ChatThread[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          loadedThreads = parsed.filter(t => t.messages && t.messages.length > 0 || t.title === 'New Chat');
-        }
-      } catch (e) {
-        console.error("Failed to parse threads", e);
-      }
-    }
-
     const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
     fetch(chatHistoryUrl, {
       method: 'POST',
@@ -180,9 +167,6 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
           }));
           setThreads(formatted);
           setActiveThreadId(formatted[0].id);
-        } else if (loadedThreads.length > 0) {
-          setThreads(loadedThreads);
-          setActiveThreadId(loadedThreads[0].id);
         } else {
           const newId = `session_${Date.now()}`;
           const initialThread: ChatThread = {
@@ -196,31 +180,24 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
         }
       })
       .catch(() => {
-        if (loadedThreads.length > 0) {
-          setThreads(loadedThreads);
-          setActiveThreadId(loadedThreads[0].id);
-        } else {
-          const newId = `session_${Date.now()}`;
-          const initialThread: ChatThread = {
-            id: newId,
-            title: 'New Chat',
-            messages: [],
-            updatedAt: new Date().toISOString()
-          };
-          setThreads([initialThread]);
-          setActiveThreadId(newId);
-        }
+        const newId = `session_${Date.now()}`;
+        const initialThread: ChatThread = {
+          id: newId,
+          title: 'New Chat',
+          messages: [],
+          updatedAt: new Date().toISOString()
+        };
+        setThreads([initialThread]);
+        setActiveThreadId(newId);
       })
       .finally(() => {
         isLoadedRef.current = true;
       });
   }, [domain, storageKey]);
 
-  // Sync state with localStorage
+  // Sync state (empty effect since localStorage is removed)
   useEffect(() => {
-    if (isLoadedRef.current) {
-      localStorage.setItem(storageKey, JSON.stringify(threads));
-    }
+    // No-op
   }, [threads, storageKey]);
 
   useEffect(() => {

@@ -1,0 +1,379 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "erp-auth",
+        "options": {
+          "allowedOrigins": "*",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "OPTIONS,GET,PUT,POST,DELETE"
+              }
+            ]
+          },
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-auth-id",
+      "name": "Auth Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "login"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "create_user"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "update_avatar"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "update_password"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "list_users"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "backup_db"
+            }
+          ]
+        }
+      },
+      "id": "switch-auth-id",
+      "name": "Route Auth Operations",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        450,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, email, role, password_hash, avatar, needs_password_change FROM erp_users WHERE LOWER(email) = LOWER('{{ $json.body.email }}');"
+      },
+      "id": "db-login-query-id",
+      "name": "Postgres Login Query",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        150
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const dbUser = $input.first().json;\nconst inputPassword = $('Auth Webhook').first().json.body.password;\n\nif (!dbUser || !dbUser.email) {\n  return [{ json: { success: false, message: 'User account not found.' } }];\n}\n\nif (dbUser.password_hash !== inputPassword) {\n  return [{ json: { success: false, message: 'Invalid email or password.' } }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    user: {\n      id: dbUser.id,\n      email: dbUser.email,\n      role: dbUser.role,\n      avatar: dbUser.avatar,\n      needs_password_change: !!dbUser.needs_password_change\n    }\n  }\n}];"
+      },
+      "id": "verify-creds-id",
+      "name": "Verify Credentials",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO erp_users (email, role, password_hash, needs_password_change, created_at)\nVALUES (LOWER('{{ $json.body.email }}'), '{{ $json.body.role || \"admin\" }}', '{{ $json.body.password }}', TRUE, NOW())\nON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role, password_hash = EXCLUDED.password_hash, needs_password_change = TRUE;\nSELECT 'User created/updated' AS status;"
+      },
+      "id": "db-create-user-id",
+      "name": "Postgres Create User",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        280
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { success: true, message: 'User account saved in database.' } }];"
+      },
+      "id": "success-create-id",
+      "name": "Format Create Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE erp_users SET avatar = '{{ $json.body.avatar }}' WHERE LOWER(email) = LOWER('{{ $json.body.email }}');\nSELECT 'Avatar updated' as status;"
+      },
+      "id": "db-update-avatar-id",
+      "name": "Postgres Update Avatar",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        410
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE erp_users SET password_hash = '{{ $json.body.password }}', needs_password_change = FALSE WHERE LOWER(email) = LOWER('{{ $json.body.email }}');\nSELECT 'Password updated' as status;"
+      },
+      "id": "db-update-pass-id",
+      "name": "Postgres Update Password",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        540
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, email, role, needs_password_change, created_at, avatar FROM erp_users ORDER BY created_at DESC;"
+      },
+      "id": "db-list-users-id",
+      "name": "Postgres List Users",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        670
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO emergency_backups (database_name, backup_file_name, file_size_bytes, status, backup_data, created_at)\nVALUES ('{{ $json.body.database_name }}', '{{ $json.body.file_name }}', {{ $json.body.file_size || 0 }}, 'COMPLETED', '{{ $json.body.backup_data || \"\" }}', NOW());\nSELECT 'Backup stored successfully' as status;"
+      },
+      "id": "db-backup-db-id",
+      "name": "Postgres Emergency Backup",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        800
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-respond-auth-id",
+      "name": "Respond to Frontend",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Auth Webhook": {
+      "main": [
+        [
+          {
+            "node": "Route Auth Operations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Auth Operations": {
+      "main": [
+        [
+          {
+            "node": "Postgres Login Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Create User",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Update Avatar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Update Password",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres List Users",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Emergency Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Login Query": {
+      "main": [
+        [
+          {
+            "node": "Verify Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Credentials": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Create User": {
+      "main": [
+        [
+          {
+            "node": "Format Create Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Create Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Update Avatar": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Update Password": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres List Users": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Emergency Backup": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-history",
+        "options": {
+          "allowedOrigins": "*",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "OPTIONS,GET,PUT,POST,DELETE"
+              }
+            ]
+          },
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-chat-history-id",
+      "name": "Chat History Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "get_history"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "save_session"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "save_message"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "get_telemetry"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "store_telemetry"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "get_db_metadata"
+            }
+          ]
+        }
+      },
+      "id": "switch-chat-id",
+      "name": "Route Chat Operations",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        450,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT s.id, s.domain, s.title, s.is_pinned, s.updated_at,\n       COALESCE(json_agg(json_build_object('id', m.id, 'session_id', m.session_id, 'sender', m.sender, 'text', COALESCE(m.text, m.message), 'timestamp', m.timestamp) ORDER BY m.id ASC) FILTER (WHERE m.id IS NOT NULL), '[]'::json) AS messages\nFROM chat_sessions s\nLEFT JOIN chat_messages m ON s.id = m.session_id\nWHERE s.domain = '{{ $json.body.domain || \"database\" }}'\nGROUP BY s.id, s.domain, s.title, s.is_pinned, s.updated_at\nORDER BY s.updated_at DESC;"
+      },
+      "id": "db-get-history-id",
+      "name": "Postgres Get History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        150
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_sessions (id, domain, title, is_pinned, updated_at)\nVALUES (\n  '{{ $json.body.session_id || $json.body.id }}',\n  '{{ $json.body.domain || \"database\" }}',\n  '{{ ($json.body.title || \"New Chat\").replace(/'/g, \"''\") }}',\n  {{ $json.body.is_pinned ? true : false }},\n  NOW()\n)\nON CONFLICT (id) DO UPDATE SET\n  title = EXCLUDED.title,\n  is_pinned = EXCLUDED.is_pinned,\n  updated_at = NOW()\nRETURNING id, 'Session saved successfully' AS status;"
+      },
+      "id": "db-save-session-id",
+      "name": "Postgres Save Session",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        280
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_messages (id, session_id, sender, text, message, timestamp)\nVALUES (\n  {{ $json.body.message.id }},\n  '{{ $json.body.session_id }}',\n  '{{ $json.body.message.sender }}',\n  $$RECORD_TEXT_START$${{ $json.body.message.text || $json.body.message.message || \"\" }}$$RECORD_TEXT_END$$,\n  $$RECORD_TEXT_START$${{ $json.body.message.text || $json.body.message.message || \"\" }}$$RECORD_TEXT_END$$,\n  '{{ $json.body.message.timestamp || new Date().toISOString() }}'\n)\nON CONFLICT (id) DO UPDATE SET \n  text = EXCLUDED.text,\n  message = EXCLUDED.message\nRETURNING id, 'Message saved' AS status;"
+      },
+      "id": "db-save-msg-id",
+      "name": "Postgres Save Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        410
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT server_name, status, cpu_usage, memory_usage, disk_usage, uptime, timestamp\nFROM server_metrics\nORDER BY timestamp DESC LIMIT 20;"
+      },
+      "id": "db-get-telemetry-id",
+      "name": "Postgres Get Telemetry",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        540
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO server_metrics (server_name, status, cpu_usage, memory_usage, disk_usage, uptime, timestamp)\nVALUES (\n  '{{ $json.body.server_name || \"LocalPC\" }}',\n  '{{ $json.body.status || \"OPERATIONAL\" }}',\n  {{ $json.body.cpu_usage || 0 }},\n  {{ $json.body.memory_usage || 0 }},\n  {{ $json.body.disk_usage || 0 }},\n  '{{ $json.body.uptime || \"\" }}',\n  NOW()\n);\nSELECT 'Telemetry stored' as status;"
+      },
+      "id": "db-store-telemetry-id",
+      "name": "Postgres Store Telemetry",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        670
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    DB_NAME() AS name,\n    'Microsoft SQL Server' AS type,\n    'Online' AS status,\n    CAST(SUM(size * 8.0 / 1024) AS VARCHAR) + ' MB' AS storage,\n    (SELECT COUNT(*) FROM sys.tables) AS tables,\n    (SELECT COUNT(*) FROM sys.dm_exec_connections) AS connections,\n    'None' AS replication,\n    'Backup Configured' AS backup\nFROM sys.master_files\nWHERE database_id = DB_ID();"
+      },
+      "id": "mssql-get-metadata-id",
+      "name": "MSSQL Get Metadata",
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        800
+      ],
+      "credentials": {
+        "microsoftSql": {
+          "name": "RedCloud_MSSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-respond-chat-id",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Chat History Webhook": {
+      "main": [
+        [
+          {
+            "node": "Route Chat Operations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Chat Operations": {
+      "main": [
+        [
+          {
+            "node": "Postgres Get History",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Save Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Save Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Get Telemetry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Store Telemetry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MSSQL Get Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Get History": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Save Session": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Save Message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Get Telemetry": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Store Telemetry": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MSSQL Get Metadata": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -18,8 +18,7 @@ export default function ForgotPassword() {
   useEffect(() => {
     if (step === 4) {
       const interval = setInterval(() => {
-        const storedReqs = JSON.parse(localStorage.getItem('eraop_password_requests') || '[]');
-        const req = storedReqs.find((r: any) => r.email === email);
+        const req = passwordRequests.find((r: any) => r.email === email);
         if (req && req.status === 'approved') {
           setStep(5); // Success step
           clearInterval(interval);
@@ -27,7 +26,7 @@ export default function ForgotPassword() {
       }, 2000);
       return () => clearInterval(interval);
     }
-  }, [step, email]);
+  }, [step, email, passwordRequests]);
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();

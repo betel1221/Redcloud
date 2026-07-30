@@ -20,7 +20,14 @@ export default function DatabaseMonitoring() {
     ])
       .then(([serverData, dbMeta]) => {
         setServers(serverData);
-        setCompanyDatabases(dbMeta || []);
+        // Filter: only keep MS SQL Server databases
+        const mssqlOnly = (dbMeta || []).filter(db => 
+          db.type.toLowerCase().includes('mssql') || 
+          db.type.toLowerCase().includes('microsoft') ||
+          db.type.toLowerCase().includes('sql server') ||
+          db.name === 'FOODAPPANDDB'
+        );
+        setCompanyDatabases(mssqlOnly);
       })
       .catch(() => {
         setCompanyDatabases([]);
@@ -80,7 +87,7 @@ export default function DatabaseMonitoring() {
             <Database className="w-6 h-6 mr-3 text-primary" />
             Database Monitoring
           </h1>
-          <p className="text-textSecondary mt-1">Real-time telemetry for FOODAPPANDDB (MS SQL), erp_demo & server_metrics (PostgreSQL).</p>
+          <p className="text-textSecondary mt-1">Real-time telemetry for FOODAPPANDDB (MS SQL) only.</p>
         </div>
       </div>
 
