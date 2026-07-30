@@ -92,7 +92,7 @@
                       "text": "\ud83d\udd11 Launch Login Portal",
                       "additionalFields": {
                         "webApp": {
-                          "url": "https://betel1221.github.io/redhelp-login/?v=6"
+                          "url": "https://betel1221.github.io/Redcloud/?v=7"
                         }
                       }
                     }
@@ -204,7 +204,7 @@
                       "text": "\ud83d\udd11 Launch Login Portal",
                       "additionalFields": {
                         "webApp": {
-                          "url": "https://betel1221.github.io/redhelp-login/?v=6"
+                          "url": "https://betel1221.github.io/Redcloud/?v=7"
                         }
                       }
                     }
