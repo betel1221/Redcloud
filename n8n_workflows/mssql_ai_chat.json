@@ -21,9 +21,9 @@
                 "value": "OPTIONS,GET,PUT,POST,DELETE"
               }
             ]
-          },
-          "responseMode": "responseNode"
-        }
+          }
+        },
+        "responseMode": "responseNode"
       },
       "id": "webhook-ai-chat-id",
       "name": "Webhook",

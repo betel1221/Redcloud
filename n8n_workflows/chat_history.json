@@ -21,9 +21,9 @@
                 "value": "OPTIONS,GET,PUT,POST,DELETE"
               }
             ]
-          },
-          "responseMode": "responseNode"
-        }
+          }
+        },
+        "responseMode": "responseNode"
       },
       "id": "webhook-chat-history-id",
       "name": "Chat History Webhook",
