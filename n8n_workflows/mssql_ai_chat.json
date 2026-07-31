@@ -93,7 +93,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const schema = $('MSSQL Get Schema').all().map(i => i.json);\nconst telemetry = $('Postgres Get Telemetry').first().json || {};\nconst security = $('Postgres Get Security').first().json || {};\n\nconst contextStr = `\nMSSQL Customer Database Tables:\n${JSON.stringify(schema.slice(0, 100), null, 2)}\n\nLive PC Server Telemetry:\n- Host: ${telemetry.server_name || 'Local PC'}\n- Status: ${telemetry.status || 'OPERATIONAL'}\n- CPU Load: ${telemetry.cpu_usage || 0}%\n- Memory Load: ${telemetry.memory_usage || 0}%\n- Disk Load: ${telemetry.disk_usage || 0}%\n- Uptime: ${telemetry.uptime || 'unknown'}\n\nSecurity Status snapshot:\n- Threat Level: ${security.threat_level || 'LOW'}\n- Risk Score: ${security.risk_score || 0}\n- Failed Logins: ${security.failed_logins || 0}\n- Successful Logins: ${security.successful_logins || 0}\n- Blocked IPs: ${security.blocked_ips || 0}\n`;\n\nreturn [{\n  json: {\n    context: contextStr,\n    question: $('Webhook').first().json.body.message || 'Help me analyze this systems status.',\n    session_id: $('Webhook').first().json.body.session_id || 'session_default'\n  }\n}];"
+        "jsCode": "const schema = $('MSSQL Get Schema').all().map(i => i.json);\nconst telemetry = $('Postgres Get Telemetry').first()?.json || {};\nconst security = $('Postgres Get Security').first()?.json || {};\n\nconst contextStr = `\nMSSQL Customer Database Tables:\n${JSON.stringify(schema.slice(0, 100), null, 2)}\n\nLive PC Server Telemetry:\n- Host: ${telemetry.server_name || 'Local PC'}\n- Status: ${telemetry.status || 'OPERATIONAL'}\n- CPU Load: ${telemetry.cpu_usage || 0}%\n- Memory Load: ${telemetry.memory_usage || 0}%\n- Disk Load: ${telemetry.disk_usage || 0}%\n- Uptime: ${telemetry.uptime || 'unknown'}\n\nSecurity Status snapshot:\n- Threat Level: ${security.threat_level || 'LOW'}\n- Risk Score: ${security.risk_score || 0}\n- Failed Logins: ${security.failed_logins || 0}\n- Successful Logins: ${security.successful_logins || 0}\n- Blocked IPs: ${security.blocked_ips || 0}\n`;\n\nreturn [{\n  json: {\n    context: contextStr,\n    question: $('Webhook').first().json.body.message || 'Help me analyze this systems status.',\n    session_id: $('Webhook').first().json.body.session_id || 'session_default'\n  }\n}];"
       },
       "id": "format-rag-context-id",
       "name": "Format RAG Context",
@@ -280,13 +280,7 @@
             "node": "Respond to Frontend",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "Respond to Frontend": {
-      "main": [
-        [
+          },
           {
             "node": "Postgres Save Assistant Message",
             "type": "main",
@@ -294,6 +288,9 @@
           }
         ]
       ]
+    },
+    "Respond to Frontend": {
+      "main": []
     }
   }
 }
