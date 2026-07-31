@@ -35,6 +35,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const safeFetchJson = async (url: string, options: RequestInit) => {
+  const response = await fetch(url, options);
+  
+  // Read as text first to avoid 'Unexpected end of JSON input' crash
+  const text = await response.text();
+  
+  if (!text) {
+    throw new Error('n8n returned an empty response. Check if your N8N workflow is Active and database is reachable.');
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Invalid JSON response from n8n:', text);
+    throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}`);
+  }
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -53,33 +71,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const fetchUsers = async () => {
       try {
         const authUrl = import.meta.env.VITE_N8N_AUTH_URL || 'http://localhost:5678/webhook/erp-auth';
-        const res = await fetch(authUrl, {
+        const data = await safeFetchJson(authUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ operation: 'list_users' })
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            const fetchedUsers = data.map(u => ({
-              email: u.email || u.user_email,
-              role: u.role || 'admin',
-              needsPasswordChange: u.needs_password_change || false
-            }));
-            if (fetchedUsers.length > 0) {
-              setUsers(prev => {
-                const combined = [...prev, ...fetchedUsers];
-                return combined.reduce((acc: UserAccount[], user) => {
-                  const existingIdx = acc.findIndex(u => u.email.toLowerCase() === user.email.toLowerCase());
-                  if (existingIdx >= 0) {
-                    acc[existingIdx] = user;
-                  } else {
-                    acc.push(user);
-                  }
-                  return acc;
-                }, []);
-              });
-            }
+        if (Array.isArray(data)) {
+          const fetchedUsers = data.map(u => ({
+            email: u.email || u.user_email,
+            role: u.role || 'admin',
+            needsPasswordChange: u.needs_password_change || false
+          }));
+          if (fetchedUsers.length > 0) {
+            setUsers(prev => {
+              const combined = [...prev, ...fetchedUsers];
+              return combined.reduce((acc: UserAccount[], user) => {
+                const existingIdx = acc.findIndex(u => u.email.toLowerCase() === user.email.toLowerCase());
+                if (existingIdx >= 0) {
+                  acc[existingIdx] = user;
+                } else {
+                  acc.push(user);
+                }
+                return acc;
+              }, []);
+            });
           }
         }
       } catch (e) {
@@ -100,26 +115,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Try n8n backend PostgreSQL Auth Webhook
     try {
       const authUrl = import.meta.env.VITE_N8N_AUTH_URL || 'http://localhost:5678/webhook/erp-auth';
-      const res = await fetch(authUrl, {
+      const data = await safeFetchJson(authUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operation: 'login', email, password })
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          userRole = data.user.role || userRole;
-          needsChange = !!data.user.needs_password_change;
-          if (data.user.avatar) {
-             setAvatar(data.user.avatar);
-          }
-          authSuccess = true;
-        } else if (data.message) {
-          if (data.message === 'Workflow was started' || data.message === 'Webhook received') {
-             throw new Error('Database connection failed. Ensure N8N workflow is Active.');
-          }
-          throw new Error(data.message);
+      if (data.success && data.user) {
+        userRole = data.user.role || userRole;
+        needsChange = !!data.user.needs_password_change;
+        if (data.user.avatar) {
+           setAvatar(data.user.avatar);
         }
+        authSuccess = true;
+      } else if (data.message) {
+        if (data.message === 'Workflow was started' || data.message === 'Webhook received') {
+           throw new Error('Database connection failed. Ensure N8N workflow is Active.');
+        }
+        throw new Error(data.message);
       }
     } catch (err: any) {
       console.error("Authentication failed:", err);
