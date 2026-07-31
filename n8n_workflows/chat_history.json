@@ -63,7 +63,8 @@
               "value2": "get_db_metadata"
             }
           ]
-        }
+        },
+        "dataType": "string"
       },
       "id": "switch-chat-id",
       "name": "Route Chat Operations",

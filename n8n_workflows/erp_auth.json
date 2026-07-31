@@ -63,7 +63,8 @@
               "value2": "backup_db"
             }
           ]
-        }
+        },
+        "dataType": "string"
       },
       "id": "switch-auth-id",
       "name": "Route Auth Operations",
