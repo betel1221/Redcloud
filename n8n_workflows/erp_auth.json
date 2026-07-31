@@ -78,7 +78,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id, email, role, password_hash, avatar, needs_password_change FROM erp_users WHERE LOWER(email) = LOWER('{{ $json.body.email }}');"
+        "query": "SELECT id, email, role, password_hash, avatar, needs_password_change FROM erp_users WHERE LOWER(email) = {{ $json.body.email.toLowerCase() }};"
       },
       "id": "db-login-query-id",
       "name": "Postgres Login Query",
@@ -110,7 +110,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO erp_users (email, role, password_hash, needs_password_change, created_at)\nVALUES (LOWER('{{ $json.body.email }}'), '{{ $json.body.role || \"admin\" }}', '{{ $json.body.password }}', TRUE, NOW())\nON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role, password_hash = EXCLUDED.password_hash, needs_password_change = TRUE;\nSELECT 'User created/updated' AS status;"
+        "query": "INSERT INTO erp_users (email, role, password_hash, needs_password_change, created_at)\nVALUES ({{ $json.body.email.toLowerCase() }}, '{{ $json.body.role || \"admin\" }}', {{ $json.body.password }}, TRUE, NOW())\nON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role, password_hash = EXCLUDED.password_hash, needs_password_change = TRUE;\nSELECT 'User created/updated' AS status;"
       },
       "id": "db-create-user-id",
       "name": "Postgres Create User",
@@ -142,7 +142,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE erp_users SET avatar = '{{ $json.body.avatar }}' WHERE LOWER(email) = LOWER('{{ $json.body.email }}');\nSELECT 'Avatar updated' as status;"
+        "query": "UPDATE erp_users SET avatar = {{ $json.body.avatar }} WHERE LOWER(email) = {{ $json.body.email.toLowerCase() }};\nSELECT 'Avatar updated' as status;"
       },
       "id": "db-update-avatar-id",
       "name": "Postgres Update Avatar",
@@ -161,7 +161,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE erp_users SET password_hash = '{{ $json.body.password }}', needs_password_change = FALSE WHERE LOWER(email) = LOWER('{{ $json.body.email }}');\nSELECT 'Password updated' as status;"
+        "query": "UPDATE erp_users SET password_hash = {{ $json.body.password }}, needs_password_change = FALSE WHERE LOWER(email) = {{ $json.body.email.toLowerCase() }};\nSELECT 'Password updated' as status;"
       },
       "id": "db-update-pass-id",
       "name": "Postgres Update Password",

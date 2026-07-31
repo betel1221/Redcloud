@@ -97,7 +97,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO chat_sessions (id, domain, title, is_pinned, updated_at)\nVALUES (\n  '{{ $json.body.session_id || $json.body.id }}',\n  '{{ $json.body.domain || \"database\" }}',\n  '{{ ($json.body.title || \"New Chat\").replace(/'/g, \"''\") }}',\n  {{ $json.body.is_pinned ? true : false }},\n  NOW()\n)\nON CONFLICT (id) DO UPDATE SET\n  title = EXCLUDED.title,\n  is_pinned = EXCLUDED.is_pinned,\n  updated_at = NOW()\nRETURNING id, 'Session saved successfully' AS status;"
+        "query": "INSERT INTO chat_sessions (id, domain, title, is_pinned, updated_at)\nVALUES (\n  {{ $json.body.session_id || $json.body.id }},\n  '{{ $json.body.domain || \"database\" }}',\n  '{{ ($json.body.title || \"New Chat\").replace(/'/g, \"''\") }}',\n  ={{ $json.body.is_pinned ? true : false }},\n  NOW()\n)\nON CONFLICT (id) DO UPDATE SET\n  title = EXCLUDED.title,\n  is_pinned = EXCLUDED.is_pinned,\n  updated_at = NOW()\nRETURNING id, 'Session saved successfully' AS status;"
       },
       "id": "db-save-session-id",
       "name": "Postgres Save Session",
@@ -116,7 +116,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO chat_messages (id, session_id, sender, text, message, timestamp)\nVALUES (\n  {{ $json.body.message.id }},\n  '{{ $json.body.session_id }}',\n  '{{ $json.body.message.sender }}',\n  $$RECORD_TEXT_START$${{ $json.body.message.text || $json.body.message.message || \"\" }}$$RECORD_TEXT_END$$,\n  $$RECORD_TEXT_START$${{ $json.body.message.text || $json.body.message.message || \"\" }}$$RECORD_TEXT_END$$,\n  '{{ $json.body.message.timestamp || new Date().toISOString() }}'\n)\nON CONFLICT (id) DO UPDATE SET \n  text = EXCLUDED.text,\n  message = EXCLUDED.message\nRETURNING id, 'Message saved' AS status;"
+        "query": "INSERT INTO chat_messages (id, session_id, sender, text, message, timestamp)\nVALUES (\n  {{ $json.body.message.id }},\n  '{{ $json.body.session_id }}',\n  {{ $json.body.message.sender }},\n  $$RECORD_TEXT_START$${{ $json.body.message.text || $json.body.message.message || \"\" }}$$RECORD_TEXT_END$$,\n  $$RECORD_TEXT_START$${{ $json.body.message.text || $json.body.message.message || \"\" }}$$RECORD_TEXT_END$$,\n  {{ $json.body.message.timestamp || new Date().toISOString() }}\n)\nON CONFLICT (id) DO UPDATE SET \n  text = EXCLUDED.text,\n  message = EXCLUDED.message\nRETURNING id, 'Message saved' AS status;"
       },
       "id": "db-save-msg-id",
       "name": "Postgres Save Message",

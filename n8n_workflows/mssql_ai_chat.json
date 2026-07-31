@@ -168,7 +168,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO chat_messages (session_id, sender, message, timestamp)\nVALUES (\n  '{{ $json.session_id }}',\n  'assistant',\n  $$RECORD_TEXT_START$${{ $json.answer }}$$RECORD_TEXT_END$$,\n  NOW()\n);\nSELECT 'Message saved' as status;"
+        "query": "INSERT INTO chat_messages (session_id, sender, message, timestamp)\nVALUES (\n  {{ $json.session_id }},\n  'assistant',\n  $$RECORD_TEXT_START$${{ $json.answer }}$$RECORD_TEXT_END$$,\n  NOW()\n);\nSELECT 'Message saved' as status;"
       },
       "id": "postgres-save-assistant-msg-id",
       "name": "Postgres Save Assistant Message",
