@@ -118,7 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await safeFetchJson(authUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'login', email, password })
+        body: JSON.stringify({
+          operation: 'login',
+          body: { email, password }
+        })
       });
       if (data.success && data.user) {
         userRole = data.user.role || userRole;
@@ -157,7 +160,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await fetch(authUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operation: 'update_avatar', email: userEmail, avatar: base64Image })
+          body: JSON.stringify({
+            operation: 'update_avatar',
+            body: { email: userEmail, avatar: base64Image }
+          })
         });
       } catch (err) {
         console.warn("Failed to sync avatar to backend", err);
@@ -209,7 +215,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetch(authUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'update_password', email, password: newPass })
+        body: JSON.stringify({
+          operation: 'update_password',
+          body: { email, password: newPass }
+        })
       });
     } catch (err) {
       console.warn("n8n update_password webhook unreachable", err);
