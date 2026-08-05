@@ -71,20 +71,12 @@
     },
     {
       "parameters": {
-        "rules": {
-          "values": [
-            {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "get_db_metadata"
-            }
-          ]
-        },
-        "dataType": "string"
+        "jsCode": "const operation = $input.first().json.body.operation;\nif (operation !== 'get_db_metadata') {\n  throw new Error('Unsupported operation: ' + operation);\n}\nreturn $input.all();"
       },
       "id": "switch-chat-id",
       "name": "Route Chat Operations",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         450,
         400

@@ -19,36 +19,13 @@
     },
     {
       "parameters": {
-        "rules": {
-          "values": [
-            {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "login"
-            },
-            {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "create_user"
-            },
-            {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "update_avatar"
-            },
-            {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "update_password"
-            },
-            {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "list_users"
-            }
-          ]
-        },
-        "dataType": "string"
+        "jsCode": "const operation = $input.first().json.body.operation;\nlet outputIndex = 0;\nswitch (operation) {\n  case 'login':\n    outputIndex = 0;\n    break;\n  case 'create_user':\n    outputIndex = 1;\n    break;\n  case 'update_avatar':\n    outputIndex = 2;\n    break;\n  case 'update_password':\n    outputIndex = 3;\n    break;\n  case 'list_users':\n    outputIndex = 4;\n    break;\n  default:\n    outputIndex = 0;\n}\nconst result = Array(5).fill(null).map(() => []);\nresult[outputIndex].push($input.first());\nreturn result;",
+        "outputs": 5
       },
       "id": "route-auth-ops-id",
       "name": "Route Auth Operations",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         450,
         400
