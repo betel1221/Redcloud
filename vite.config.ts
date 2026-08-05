@@ -8,6 +8,7 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     port: 5173,
+    strictPort: true, // Forces Vite to fail instead of switching to 5174
     host: true,
     proxy: {
       '/api': {
@@ -33,6 +34,7 @@ export default defineConfig({
   },
   preview: {
     port: 5173,
+    strictPort: true,
     host: true,
     allowedHosts: true,
     proxy: {

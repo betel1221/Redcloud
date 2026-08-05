@@ -19,8 +19,8 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.item.json;\nconst body = item.body || item;\nconst operation = body.operation;\n\nlet branch = 0;\nswitch (operation) {\n  case 'login': branch = 0; break;\n  case 'create_user': branch = 1; break;\n  case 'update_avatar': branch = 2; break;\n  case 'update_password': branch = 3; break;\n  case 'list_users': branch = 4; break;\n  default: branch = 0;\n}\n\nreturn $input.item.json ? [\n  branch === 0 ? [{ json: $input.item.json }] : [],\n  branch === 1 ? [{ json: $input.item.json }] : [],\n  branch === 2 ? [{ json: $input.item.json }] : [],\n  branch === 3 ? [{ json: $input.item.json }] : [],\n  branch === 4 ? [{ json: $input.item.json }] : []\n] : [];",
-        "mode": "runOnceForEachItem"
+        "jsCode": "const body = $input.first().json.body || {};\nconst operation = body.operation || $input.first().json.operation;\n\nlet outputIndex = 0;\nswitch (operation) {\n  case 'login':\n    outputIndex = 0;\n    break;\n  case 'create_user':\n    outputIndex = 1;\n    break;\n  case 'update_avatar':\n    outputIndex = 2;\n    break;\n  case 'update_password':\n    outputIndex = 3;\n    break;\n  case 'list_users':\n    outputIndex = 4;\n    break;\n  default:\n    outputIndex = 0;\n}\n\nconst cleanItem = {\n  json: JSON.parse(JSON.stringify($input.first().json))\n};\n\nconst result = [[], [], [], [], []];\nresult[outputIndex] = [cleanItem];\nreturn result;",
+        "mode": "runOnceForAllItems"
       },
       "outputs": 5,
       "id": "route-auth-ops-id",
