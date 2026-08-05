@@ -71,15 +71,16 @@
     },
     {
       "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.body.operation }}",
         "rules": {
           "values": [
             {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "get_db_metadata"
+              "value2": "get_db_metadata",
+              "output": 0
             }
           ]
-        },
-        "dataType": "string"
+        }
       },
       "id": "switch-chat-id",
       "name": "Route Chat Operations",
