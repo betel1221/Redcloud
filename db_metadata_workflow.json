@@ -1,6 +1,58 @@
 {
-  "name": "RedCloud DB Telemetry",
+  "name": "RedCloud Database Telemetry and Sync",
   "nodes": [
+    {
+      "parameters": {
+        "interval": 1,
+        "unit": "minutes"
+      },
+      "id": "interval-trigger-id",
+      "name": "Interval Trigger (1m)",
+      "type": "n8n-nodes-base.interval",
+      "typeVersion": 1,
+      "position": [
+        200,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    DB_NAME() AS name,\n    'Microsoft SQL Server' AS type,\n    'Online' AS status,\n    CAST(SUM(size * 8.0 / 1024) AS VARCHAR) + ' MB' AS storage,\n    (SELECT COUNT(*) FROM sys.tables) AS tables,\n    (SELECT COUNT(*) FROM sys.dm_exec_connections) AS connections,\n    'None' AS replication,\n    'Backup Configured' AS backup\nFROM sys.master_files\nWHERE database_id = DB_ID();"
+      },
+      "id": "mssql-get-metadata-id",
+      "name": "MSSQL Get Metadata",
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        450,
+        150
+      ],
+      "credentials": {
+        "microsoftSql": {
+          "name": "RedCloud_MSSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO database_metrics (name, type, status, storage, tables, connections, replication, backup, timestamp)\nVALUES (\n  '{{ $json.name }}',\n  '{{ $json.type }}',\n  '{{ $json.status }}',\n  '{{ $json.storage }}',\n  {{ $json.tables }},\n  '{{ $json.connections }}',\n  '{{ $json.replication }}',\n  '{{ $json.backup }}',\n  NOW()\n)\nON CONFLICT (name) DO UPDATE SET\n  type = EXCLUDED.type,\n  status = EXCLUDED.status,\n  storage = EXCLUDED.storage,\n  tables = EXCLUDED.tables,\n  connections = EXCLUDED.connections,\n  replication = EXCLUDED.replication,\n  backup = EXCLUDED.backup,\n  timestamp = NOW();\nSELECT 'Sync Completed' AS status;"
+      },
+      "id": "postgres-store-metadata-id",
+      "name": "Postgres Store Metadata",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        700,
+        150
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
     {
       "parameters": {
         "httpMethod": "POST",
@@ -13,7 +65,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        250,
+        200,
         400
       ]
     },
@@ -41,19 +93,19 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT \n    DB_NAME() AS name,\n    'Microsoft SQL Server' AS type,\n    'Online' AS status,\n    CAST(SUM(size * 8.0 / 1024) AS VARCHAR) + ' MB' AS storage,\n    (SELECT COUNT(*) FROM sys.tables) AS tables,\n    (SELECT COUNT(*) FROM sys.dm_exec_connections) AS connections,\n    'None' AS replication,\n    'Backup Configured' AS backup\nFROM sys.master_files\nWHERE database_id = DB_ID();"
+        "query": "SELECT name, type, status, storage, tables, connections, replication, backup \nFROM database_metrics \nORDER BY name ASC;"
       },
-      "id": "mssql-get-metadata-id",
-      "name": "MSSQL Get Metadata",
-      "type": "n8n-nodes-base.microsoftSql",
-      "typeVersion": 1.1,
+      "id": "postgres-get-metadata-id",
+      "name": "Postgres Get Metadata",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
       "position": [
         700,
         400
       ],
       "credentials": {
-        "microsoftSql": {
-          "name": "RedCloud_MSSQL"
+        "postgres": {
+          "name": "Red_db"
         }
       }
     },
@@ -67,12 +119,34 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        1000,
+        950,
         400
       ]
     }
   ],
   "connections": {
+    "Interval Trigger (1m)": {
+      "main": [
+        [
+          {
+            "node": "MSSQL Get Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MSSQL Get Metadata": {
+      "main": [
+        [
+          {
+            "node": "Postgres Store Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Chat History Webhook": {
       "main": [
         [
@@ -88,14 +162,14 @@
       "main": [
         [
           {
-            "node": "MSSQL Get Metadata",
+            "node": "Postgres Get Metadata",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "MSSQL Get Metadata": {
+    "Postgres Get Metadata": {
       "main": [
         [
           {
