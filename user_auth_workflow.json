@@ -19,31 +19,37 @@
     },
     {
       "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.body.operation }}",
         "rules": {
           "values": [
             {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "login"
+              "value2": "login",
+              "operation": "equals",
+              "output": 0
             },
             {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "create_user"
+              "value2": "create_user",
+              "operation": "equals",
+              "output": 1
             },
             {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "update_avatar"
+              "value2": "update_avatar",
+              "operation": "equals",
+              "output": 2
             },
             {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "update_password"
+              "value2": "update_password",
+              "operation": "equals",
+              "output": 3
             },
             {
-              "value1": "={{ $json.body.operation }}",
-              "value2": "list_users"
+              "value2": "list_users",
+              "operation": "equals",
+              "output": 4
             }
           ]
-        },
-        "dataType": "string"
+        }
       },
       "id": "route-auth-ops-id",
       "name": "Route Auth Operations",
