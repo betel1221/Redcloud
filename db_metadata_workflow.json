@@ -1,0 +1,110 @@
+{
+  "name": "RedCloud DB Telemetry",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-history",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-chat-id",
+      "name": "Chat History Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "get_db_metadata"
+            }
+          ]
+        },
+        "dataType": "string"
+      },
+      "id": "switch-chat-id",
+      "name": "Route Chat Operations",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        450,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    DB_NAME() AS name,\n    'Microsoft SQL Server' AS type,\n    'Online' AS status,\n    CAST(SUM(size * 8.0 / 1024) AS VARCHAR) + ' MB' AS storage,\n    (SELECT COUNT(*) FROM sys.tables) AS tables,\n    (SELECT COUNT(*) FROM sys.dm_exec_connections) AS connections,\n    'None' AS replication,\n    'Backup Configured' AS backup\nFROM sys.master_files\nWHERE database_id = DB_ID();"
+      },
+      "id": "mssql-get-metadata-id",
+      "name": "MSSQL Get Metadata",
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        400
+      ],
+      "credentials": {
+        "microsoftSql": {
+          "name": "RedCloud_MSSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-respond-chat-id",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Chat History Webhook": {
+      "main": [
+        [
+          {
+            "node": "Route Chat Operations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Chat Operations": {
+      "main": [
+        [
+          {
+            "node": "MSSQL Get Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MSSQL Get Metadata": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
