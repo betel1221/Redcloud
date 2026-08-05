@@ -166,6 +166,20 @@
         1200,
         400
       ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-respond-list-users-id",
+      "name": "Respond to List Users",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        670
+      ]
     }
   ],
   "connections": {
@@ -289,7 +303,7 @@
       "main": [
         [
           {
-            "node": "Respond to Frontend",
+            "node": "Respond to List Users",
             "type": "main",
             "index": 0
           }
