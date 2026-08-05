@@ -1,0 +1,322 @@
+{
+  "name": "RedCloud User Authentication",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "erp-auth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "auth-webhook-id",
+      "name": "Auth Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "login"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "create_user"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "update_avatar"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "update_password"
+            },
+            {
+              "value1": "={{ $json.body.operation }}",
+              "value2": "list_users"
+            }
+          ]
+        },
+        "dataType": "string"
+      },
+      "id": "route-auth-ops-id",
+      "name": "Route Auth Operations",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        450,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, email, role, password_hash, avatar, needs_password_change FROM erp_users WHERE LOWER(email) = '{{ ($json.body.email || $json.body.body?.email || \"\").toLowerCase() }}';"
+      },
+      "id": "db-login-query-id",
+      "name": "Postgres Login Query",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        700,
+        150
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const dbUser = $input.first().json;\nconst inputPassword = $('Auth Webhook').first().json.body.password || $('Auth Webhook').first().json.body.body?.password;\n\nif (!dbUser || !dbUser.email) {\n  return [{ json: { success: false, message: 'User account not found.' } }];\n}\n\nif (dbUser.password_hash !== inputPassword) {\n  return [{ json: { success: false, message: 'Invalid email or password.' } }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    user: {\n      id: dbUser.id,\n      email: dbUser.email,\n      role: dbUser.role,\n      avatar: dbUser.avatar,\n      needs_password_change: !!dbUser.needs_password_change\n    }\n  }\n}];"
+      },
+      "id": "verify-creds-id",
+      "name": "Verify Credentials",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO erp_users (email, role, password_hash, needs_password_change, created_at)\nVALUES (\n  '{{ ($json.body.email || $json.body.body?.email || \"\").toLowerCase() }}',\n  '{{ $json.body.role || $json.body.body?.role || \"admin\" }}',\n  '{{ $json.body.password || $json.body.body?.password }}',\n  TRUE,\n  NOW()\n)\nON CONFLICT (email) DO UPDATE SET \n  role = EXCLUDED.role, \n  password_hash = EXCLUDED.password_hash, \n  needs_password_change = TRUE;\nSELECT 'User created/updated' AS status;"
+      },
+      "id": "db-create-user-id",
+      "name": "Postgres Create User",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        700,
+        280
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { success: true, message: 'User account saved in database.' } }];"
+      },
+      "id": "success-create-id",
+      "name": "Format Create Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE erp_users SET avatar = '{{ $json.body.avatar || $json.body.body?.avatar }}' WHERE LOWER(email) = '{{ ($json.body.email || $json.body.body?.email || \"\").toLowerCase() }}';\nSELECT 'Avatar updated' as status;"
+      },
+      "id": "db-update-avatar-id",
+      "name": "Postgres Update Avatar",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        700,
+        410
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE erp_users SET password_hash = '{{ $json.body.password || $json.body.body?.password }}', needs_password_change = FALSE WHERE LOWER(email) = '{{ ($json.body.email || $json.body.body?.email || \"\").toLowerCase() }}';\nSELECT 'Password updated' as status;"
+      },
+      "id": "db-update-pass-id",
+      "name": "Postgres Update Password",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        700,
+        540
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, email, role, needs_password_change, created_at, avatar FROM erp_users ORDER BY created_at DESC;"
+      },
+      "id": "db-list-users-id",
+      "name": "Postgres List Users",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        700,
+        670
+      ],
+      "credentials": {
+        "postgres": {
+          "name": "Red_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-respond-auth-id",
+      "name": "Respond to Frontend",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Auth Webhook": {
+      "main": [
+        [
+          {
+            "node": "Route Auth Operations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Auth Operations": {
+      "main": [
+        [
+          {
+            "node": "Postgres Login Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Create User",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Update Avatar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres Update Password",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres List Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Login Query": {
+      "main": [
+        [
+          {
+            "node": "Verify Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Credentials": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Create User": {
+      "main": [
+        [
+          {
+            "node": "Format Create Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Create Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Update Avatar": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Update Password": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres List Users": {
+      "main": [
+        [
+          {
+            "node": "Respond to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
