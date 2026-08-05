@@ -30,5 +30,31 @@ export default defineConfig({
         },
       }
     }
+  },
+  preview: {
+    port: 5173,
+    host: true,
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+      '/zabbix': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+      '/webhook': {
+        target: 'http://localhost:5678',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('n8n proxy error:', err);
+          });
+        },
+      }
+    }
   }
 })
