@@ -18,6 +18,7 @@
       ]
     },
     {
+      "parameters": {
         "jsCode": "const operation = $input.first().json.body.operation;\nlet outputIndex = 0;\nswitch (operation) {\n  case 'login':\n    outputIndex = 0;\n    break;\n  case 'create_user':\n    outputIndex = 1;\n    break;\n  case 'update_avatar':\n    outputIndex = 2;\n    break;\n  case 'update_password':\n    outputIndex = 3;\n    break;\n  case 'list_users':\n    outputIndex = 4;\n    break;\n  default:\n    outputIndex = 0;\n}\nconst result = [[], [], [], [], []];\nresult[outputIndex] = $input.all();\nreturn result;",
         "outputs": 5
       },
