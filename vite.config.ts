@@ -1,13 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
   base: '/Redcloud/',
-  plugins: [react(), basicSsl()],
+  plugins: [react()],
   server: {
-    https: {},
+    allowedHosts: true,
     port: 5173,
     host: true,
     proxy: {
@@ -20,9 +19,15 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/webhook': {
-        target: 'http://127.0.0.1:5678',
+        target: 'http://localhost:5678',
         changeOrigin: true,
         secure: false,
+        ws: true,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('n8n proxy error:', err);
+          });
+        },
       }
     }
   }

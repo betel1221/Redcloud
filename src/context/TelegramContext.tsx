@@ -63,12 +63,33 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         colorScheme: "dark"
       };
 
-      // Expose to window for the rest of the application
-      (window as any).Telegram = (window as any).Telegram || {};
-      (window as any).Telegram.WebApp = mockWebApp;
+      // Expose to window safely for the rest of the application
+      let finalWebApp = mockWebApp;
+      try {
+        if (!(window as any).Telegram) {
+          (window as any).Telegram = {};
+        }
+        if (!(window as any).Telegram.WebApp) {
+          (window as any).Telegram.WebApp = mockWebApp;
+        } else {
+          finalWebApp = (window as any).Telegram.WebApp;
+          // Safely add missing mock properties for local debugging if writeable
+          for (const key in mockWebApp) {
+            if (!(key in finalWebApp)) {
+              try {
+                (finalWebApp as any)[key] = (mockWebApp as any)[key];
+              } catch (err) {
+                // Ignore read-only property errors
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Could not safely configure Telegram WebApp window object:", e);
+      }
 
       setIsTelegram(false); // Keep standard navigation visible for desktop browser debugging
-      setWebApp(mockWebApp);
+      setWebApp(finalWebApp);
     }
   }, []);
 
