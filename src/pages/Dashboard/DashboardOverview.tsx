@@ -57,7 +57,7 @@ export default function DashboardOverview() {
           performance: mockPerformanceData,
           health: {
             dbHealth: healthRes.db_health,
-            dbStatus: 'Optimal performance',
+            dbStatus: healthRes.db_status || 'Optimal performance',
             serverHealth: healthRes.server_health,
             serverStatus: `${serversRes.length} nodes online`,
             securityScore: healthRes.security_score,

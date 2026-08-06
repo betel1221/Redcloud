@@ -49,22 +49,89 @@ const safeFetchJson = async (url: string, options: RequestInit) => {
     return JSON.parse(text);
   } catch (err) {
     console.error('Invalid JSON response from n8n:', text);
-    throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}`);
+    throw err;
   }
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [role, setRole] = useState<'admin' | 'superadmin' | null>(null);
-  const [avatar, setAvatar] = useState<string | null>(null);
-  const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
+  // Load initial values from localStorage if available and not expired
+  const getInitialState = () => {
+    const isAuth = localStorage.getItem('auth_isAuthenticated') === 'true';
+    const timestampStr = localStorage.getItem('auth_timestamp');
+    if (!isAuth || !timestampStr) {
+      return { isAuth: false, email: null, role: null, avatar: null, complete: false, change: false };
+    }
+    const timestamp = parseInt(timestampStr, 10);
+    const now = Date.now();
+    const tenMinutes = 10 * 60 * 1000;
+    
+    if (now - timestamp > tenMinutes) {
+      // Session expired
+      localStorage.clear();
+      return { isAuth: false, email: null, role: null, avatar: null, complete: false, change: false };
+    }
+    
+    // Refresh timestamp
+    localStorage.setItem('auth_timestamp', now.toString());
+    return {
+      isAuth: true,
+      email: localStorage.getItem('auth_userEmail'),
+      role: localStorage.getItem('auth_role') as 'admin' | 'superadmin',
+      avatar: localStorage.getItem('auth_avatar'),
+      complete: localStorage.getItem('auth_profileComplete') === 'true',
+      change: localStorage.getItem('auth_needsPasswordChange') === 'true'
+    };
+  };
+
+  const initialState = getInitialState();
+
+  const [isAuthenticated, setIsAuthenticated] = useState(initialState.isAuth);
+  const [userEmail, setUserEmail] = useState<string | null>(initialState.email);
+  const [role, setRole] = useState<'admin' | 'superadmin' | null>(initialState.role);
+  const [avatar, setAvatar] = useState<string | null>(initialState.avatar);
+  const [needsPasswordChange, setNeedsPasswordChange] = useState(initialState.change);
   const [passwordRequests, setPasswordRequests] = useState<PasswordRequest[]>([]);
-  const [profileComplete, setProfileComplete] = useState<boolean>(false);
+  const [profileComplete, setProfileComplete] = useState<boolean>(initialState.complete);
   const [users, setUsers] = useState<UserAccount[]>([
     { email: 'superadmin@company.com', role: 'superadmin', password: 'admin', needsPasswordChange: false }
   ]);
   const [loading, setLoading] = useState(true);
+
+  // Monitor user activity and handle 10-minute session expiry
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    // Check every 10 seconds if session has expired
+    const interval = setInterval(() => {
+      const timestampStr = localStorage.getItem('auth_timestamp');
+      if (timestampStr) {
+        const timestamp = parseInt(timestampStr, 10);
+        const now = Date.now();
+        const tenMinutes = 10 * 60 * 1000;
+        if (now - timestamp > tenMinutes) {
+          logout();
+        }
+      } else {
+        logout();
+      }
+    }, 10000);
+    
+    // Refresh the 10-minute session timer whenever the user interacts with the app
+    const handleActivity = () => {
+      localStorage.setItem('auth_timestamp', Date.now().toString());
+    };
+    
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('mousemove', handleActivity);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('mousemove', handleActivity);
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Fetch users from n8n on mount (strictly in-memory, no localStorage checks)
@@ -128,6 +195,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         needsChange = !!data.user.needs_password_change;
         if (data.user.avatar) {
            setAvatar(data.user.avatar);
+           localStorage.setItem('auth_avatar', data.user.avatar);
+        } else {
+           setAvatar(null);
+           localStorage.removeItem('auth_avatar');
         }
         authSuccess = true;
       } else if (data.message) {
@@ -150,10 +221,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole(userRole);
     setNeedsPasswordChange(needsChange);
     setProfileComplete(false); // default profileComplete to false in-memory
+
+    // Store in localStorage
+    localStorage.setItem('auth_isAuthenticated', 'true');
+    localStorage.setItem('auth_userEmail', email);
+    localStorage.setItem('auth_role', userRole);
+    localStorage.setItem('auth_profileComplete', 'false');
+    localStorage.setItem('auth_needsPasswordChange', needsChange ? 'true' : 'false');
+    localStorage.setItem('auth_timestamp', Date.now().toString());
   };
 
   const updateAvatar = async (base64Image: string) => {
     setAvatar(base64Image);
+    localStorage.setItem('auth_avatar', base64Image);
     if (userEmail) {
       try {
         const authUrl = import.meta.env.VITE_N8N_AUTH_URL || 'http://localhost:5678/webhook/erp-auth';
@@ -173,9 +253,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const completeProfile = () => {
     setProfileComplete(true);
+    localStorage.setItem('auth_profileComplete', 'true');
   };
 
   const logout = () => {
+    localStorage.removeItem('auth_isAuthenticated');
+    localStorage.removeItem('auth_userEmail');
+    localStorage.removeItem('auth_role');
+    localStorage.removeItem('auth_avatar');
+    localStorage.removeItem('auth_profileComplete');
+    localStorage.removeItem('auth_needsPasswordChange');
+    localStorage.removeItem('auth_timestamp');
+    
     setIsAuthenticated(false);
     setUserEmail(null);
     setRole(null);
