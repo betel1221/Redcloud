@@ -138,13 +138,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // If not authenticated yet but parameter is in URL, cache it immediately so it survives redirects!
     const urlParams = new URLSearchParams(window.location.search);
     const urlChatId = urlParams.get('telegram_chat_id');
-    if (urlChatId) {
+    if (urlChatId && urlChatId !== 'undefined' && urlChatId !== 'null') {
       sessionStorage.setItem('telegram_chat_id', urlChatId);
     }
 
     if (isAuthenticated && userEmail) {
       const telegramChatId = urlChatId || sessionStorage.getItem('telegram_chat_id');
-      if (telegramChatId) {
+      if (telegramChatId && telegramChatId !== 'undefined' && telegramChatId !== 'null') {
         const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
         fetch(chatHistoryUrl, {
           method: 'POST',
@@ -265,7 +265,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('auth_needsPasswordChange', needsChange ? 'true' : 'false');
     localStorage.setItem('auth_timestamp', Date.now().toString());
 
-    if (telegramChatId) {
+    if (telegramChatId && telegramChatId !== 'undefined' && telegramChatId !== 'null') {
       const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
       fetch(chatHistoryUrl, {
         method: 'POST',
