@@ -8,7 +8,7 @@ export default function Landing() {
   useEffect(() => {
     // Automatically redirect logged-in users to the dashboard
     if (localStorage.getItem('auth_isAuthenticated') === 'true') {
-      navigate('/dashboard');
+      navigate('/dashboard' + window.location.search);
     }
   }, [navigate]);
 
@@ -22,7 +22,7 @@ export default function Landing() {
         </div>
         <div className="flex items-center space-x-4">
           <button 
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/login' + window.location.search)}
             className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-all duration-300 font-medium text-sm shadow-sm"
           >
             Log In
@@ -50,7 +50,7 @@ export default function Landing() {
           
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <button 
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/login' + window.location.search)}
               className="group px-8 py-4 bg-primary text-white rounded-md font-bold text-lg hover:bg-primary/90 transition-all duration-300 flex items-center shadow-md shadow-primary/20"
             >
               Access Dashboard

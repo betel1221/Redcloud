@@ -15,7 +15,7 @@ export interface PasswordRequest {
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (email: string, password?: string, telegramChatId?: string) => Promise<void>;
   logout: () => void;
   userEmail: string | null;
   role: 'admin' | 'superadmin' | null;
@@ -207,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password?: string) => {
+  const login = async (email: string, password?: string, telegramChatId?: string) => {
     await new Promise((resolve) => setTimeout(resolve, 500));
     
     let userRole: 'admin' | 'superadmin' = (email === 'superadmin@company.com') ? 'superadmin' : 'admin';
@@ -249,7 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!authSuccess) {
        throw new Error('Authentication failed.');
-    }
+     }
     
     setIsAuthenticated(true);
     setUserEmail(email);
@@ -264,6 +264,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('auth_profileComplete', 'false');
     localStorage.setItem('auth_needsPasswordChange', needsChange ? 'true' : 'false');
     localStorage.setItem('auth_timestamp', Date.now().toString());
+
+    if (telegramChatId) {
+      const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+      fetch(chatHistoryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'register_telegram',
+          email: email,
+          telegram_chat_id: telegramChatId
+        })
+      })
+        .then(res => {
+          if (res.ok) {
+            console.log("Registered Telegram Chat ID successfully on login!");
+          }
+        })
+        .catch(e => console.warn("Failed to register Telegram Chat ID on login:", e));
+    }
   };
 
   const updateAvatar = async (base64Image: string) => {

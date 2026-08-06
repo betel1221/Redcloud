@@ -33,8 +33,9 @@ export default function Login() {
     
     setIsLoading(true);
     try {
-      // Backend integration happens here
-      await login(email, password);
+      const urlParams = new URLSearchParams(window.location.search);
+      const telegramChatId = urlParams.get('telegram_chat_id');
+      await login(email, password, telegramChatId || undefined);
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Login failed:', error);
