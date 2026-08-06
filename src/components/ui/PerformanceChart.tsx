@@ -20,9 +20,16 @@ export const mockPerformanceData: any[] = [
 interface PerformanceChartProps {
   data?: any[];
   title?: string;
+  cpuName?: string;
+  memoryName?: string;
 }
 
-export default function PerformanceChart({ data = mockPerformanceData, title = "System Performance" }: PerformanceChartProps) {
+export default function PerformanceChart({ 
+  data = mockPerformanceData, 
+  title = "System Performance",
+  cpuName = "CPU Usage %",
+  memoryName = "Memory Usage %"
+}: PerformanceChartProps) {
   return (
     <div className="glass-panel p-6 flex flex-col h-full border border-border shadow-xl">
       <div className="flex justify-between items-center mb-6">
@@ -54,8 +61,8 @@ export default function PerformanceChart({ data = mockPerformanceData, title = "
               itemStyle={{ fontWeight: 600 }}
               cursor={{ stroke: '#4B5563', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
-            <Area type="monotone" dataKey="memory" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorMemory)" name="Memory Usage %" activeDot={{ r: 6, strokeWidth: 0, fill: '#3B82F6' }} />
-            <Area type="monotone" dataKey="cpu" stroke="#EF4444" strokeWidth={3} fillOpacity={1} fill="url(#colorCpu)" name="CPU Usage %" activeDot={{ r: 6, strokeWidth: 0, fill: '#EF4444' }} />
+            <Area type="monotone" dataKey="memory" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorMemory)" name={memoryName} activeDot={{ r: 6, strokeWidth: 0, fill: '#3B82F6' }} />
+            <Area type="monotone" dataKey="cpu" stroke="#EF4444" strokeWidth={3} fillOpacity={1} fill="url(#colorCpu)" name={cpuName} activeDot={{ r: 6, strokeWidth: 0, fill: '#EF4444' }} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

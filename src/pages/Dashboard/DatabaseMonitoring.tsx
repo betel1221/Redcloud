@@ -19,12 +19,13 @@ export default function DatabaseMonitoring() {
     { title: 'Index optimization', impact: 'HIGH', desc: 'Add a non-clustered index on dbo.Orders(customer_id, status) to optimize order history query response time.' },
     { title: 'High connections lock warning', impact: 'MEDIUM', desc: 'Detected 2 active connections. Enable read-committed snapshot isolation to avoid potential read locks.' }
   ]);
+  const [telemetryHistory, setTelemetryHistory] = useState<any[]>([]);
 
   useEffect(() => {
     setLoading(true);
     const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
 
-    // Fetch server telemetry, real database metadata, largest tables, and AI recommendations in parallel
+    // Fetch server telemetry, real database metadata, largest tables, AI recommendations, and live history
     Promise.all([
       fetchLiveServerTelemetry(),
       fetchDatabaseMetadata(),
@@ -37,9 +38,14 @@ export default function DatabaseMonitoring() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operation: 'get_ai_recommendations' })
+      }).then(res => res.ok ? res.json() : []).catch(() => []),
+      fetch(chatHistoryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'get_connection_history' })
       }).then(res => res.ok ? res.json() : []).catch(() => [])
     ])
-      .then(([serverData, dbMeta, tablesData, recsData]) => {
+      .then(([serverData, dbMeta, tablesData, recsData, historyData]) => {
         setServers(serverData);
         // Filter: only keep MS SQL Server databases
         const mssqlOnly = (dbMeta || []).filter(db => 
@@ -55,6 +61,9 @@ export default function DatabaseMonitoring() {
         }
         if (Array.isArray(recsData) && recsData.length > 0) {
           setAiRecommendations(recsData);
+        }
+        if (Array.isArray(historyData) && historyData.length > 0) {
+          setTelemetryHistory(historyData);
         }
       })
       .catch((e) => {
@@ -228,7 +237,12 @@ export default function DatabaseMonitoring() {
         <div className="lg:col-span-2 space-y-6">
           {/* Performance Graphs */}
           <div className="h-80">
-            <PerformanceChart title="Database Performance & Query Throughput" data={mockPerformanceData} />
+            <PerformanceChart 
+              title="Database Performance & Query Throughput" 
+              data={telemetryHistory.length > 0 ? telemetryHistory : mockPerformanceData} 
+              cpuName="Active Connections"
+              memoryName="Database Size (MB)"
+            />
           </div>
 
           {/* Company Databases Table */}
