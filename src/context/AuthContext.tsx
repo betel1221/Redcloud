@@ -133,6 +133,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isAuthenticated]);
 
+  // Check URL for telegram_chat_id and register it if authenticated
+  useEffect(() => {
+    if (isAuthenticated && userEmail) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const telegramChatId = urlParams.get('telegram_chat_id');
+      if (telegramChatId) {
+        const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+        fetch(chatHistoryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operation: 'register_telegram',
+            email: userEmail,
+            telegram_chat_id: telegramChatId
+          })
+        })
+          .then(res => {
+            if (res.ok) {
+              console.log("Registered Telegram Chat ID successfully!");
+              const newUrl = window.location.pathname;
+              window.history.replaceState({}, document.title, newUrl);
+            }
+          })
+          .catch(e => console.warn("Failed to register Telegram Chat ID:", e));
+      }
+    }
+  }, [isAuthenticated, userEmail]);
+
   useEffect(() => {
     // Fetch users from n8n on mount (strictly in-memory, no localStorage checks)
     const fetchUsers = async () => {

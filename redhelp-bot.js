@@ -15,10 +15,12 @@ RedCloud provides centralized real-time monitoring, database telemetry tracking,
 🔒 **Authentication Required**
 To start using the bot, run system diagnostics, or chat with the AI assistant, please authenticate via our secure Mini App below.`;
 
+  const launchUrl = `${MINI_APP_URL}?telegram_chat_id=${ctx.chat.id}`;
+
   return ctx.replyWithMarkdown(
     welcomeText,
     Markup.inlineKeyboard([
-      [Markup.button.webApp('🚀 Launch RedHelp Mini App', MINI_APP_URL)]
+      [Markup.button.webApp('🚀 Launch RedHelp Mini App', launchUrl)]
     ])
   );
 });
