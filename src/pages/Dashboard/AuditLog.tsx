@@ -463,8 +463,53 @@ export default function AuditLog() {
                 </ul>
               </div>
             )}
+          {/* User Accounts Table */}
+          <div className="glass-panel p-6 mb-6">
+            <h2 className="text-lg font-bold text-textPrimary mb-2 flex items-center">
+              <UserCog className="w-5 h-5 mr-2 text-primary" /> Active User Accounts
+            </h2>
+            <p className="text-xs text-textSecondary mb-4">
+              Registered administrators with database access.
+            </p>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-textSecondary uppercase bg-surfaceHeader border-b border-border font-semibold">
+                  <tr>
+                    <th scope="col" className="px-4 py-3">Email Address</th>
+                    <th scope="col" className="px-4 py-3">Role</th>
+                    <th scope="col" className="px-4 py-3">Security Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {users.map((user) => (
+                    <tr key={user.email} className="hover:bg-surfaceHover/50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-textPrimary font-mono text-xs">{user.email}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          user.role === 'superadmin' 
+                            ? 'bg-danger/10 text-danger border border-danger/20' 
+                            : 'bg-primary/10 text-primary border border-primary/20'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          user.needsPasswordChange
+                            ? 'bg-warning/10 text-warning border border-warning/20'
+                            : 'bg-success/10 text-success border border-success/20'
+                        }`}>
+                          {user.needsPasswordChange ? 'Reset Required' : 'Active'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-          <div className="glass-panel p-6 h-full">
+          <div className="glass-panel p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
               <h2 className="text-lg font-bold text-textPrimary flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-primary" /> Activity Audit Logs
