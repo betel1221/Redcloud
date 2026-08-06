@@ -9,16 +9,37 @@ export default function DatabaseMonitoring() {
   const [loading, setLoading] = useState(true);
   const [servers, setServers] = useState<ServerTelemetry[]>([]);
   const [companyDatabases, setCompanyDatabases] = useState<DatabaseMetadata[]>([]);
+  const [largestTables, setLargestTables] = useState<any[]>([
+    { name: 'dbo.Orders', rows: '142,520', size: '42.5 MB' },
+    { name: 'dbo.AuditLogs', rows: '389,102', size: '38.2 MB' },
+    { name: 'dbo.Inventory', rows: '89,450', size: '22.1 MB' },
+    { name: 'dbo.Users', rows: '12,410', size: '5.4 MB' },
+  ]);
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([
+    { title: 'Index optimization', impact: 'HIGH', desc: 'Add a non-clustered index on dbo.Orders(customer_id, status) to optimize order history query response time.' },
+    { title: 'High connections lock warning', impact: 'MEDIUM', desc: 'Detected 2 active connections. Enable read-committed snapshot isolation to avoid potential read locks.' }
+  ]);
 
   useEffect(() => {
     setLoading(true);
+    const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
 
-    // Fetch server telemetry + real database metadata in parallel
+    // Fetch server telemetry, real database metadata, largest tables, and AI recommendations in parallel
     Promise.all([
       fetchLiveServerTelemetry(),
-      fetchDatabaseMetadata()
+      fetchDatabaseMetadata(),
+      fetch(chatHistoryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'get_largest_tables' })
+      }).then(res => res.ok ? res.json() : []).catch(() => []),
+      fetch(chatHistoryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'get_ai_recommendations' })
+      }).then(res => res.ok ? res.json() : []).catch(() => [])
     ])
-      .then(([serverData, dbMeta]) => {
+      .then(([serverData, dbMeta, tablesData, recsData]) => {
         setServers(serverData);
         // Filter: only keep MS SQL Server databases
         const mssqlOnly = (dbMeta || []).filter(db => 
@@ -28,8 +49,16 @@ export default function DatabaseMonitoring() {
           db.name === 'FOODAPPANDDB'
         );
         setCompanyDatabases(mssqlOnly);
+        
+        if (Array.isArray(tablesData) && tablesData.length > 0) {
+          setLargestTables(tablesData);
+        }
+        if (Array.isArray(recsData) && recsData.length > 0) {
+          setAiRecommendations(recsData);
+        }
       })
-      .catch(() => {
+      .catch((e) => {
+        console.warn("Failed to load DB telemetry:", e);
         setCompanyDatabases([]);
       })
       .finally(() => setLoading(false));
@@ -52,6 +81,16 @@ export default function DatabaseMonitoring() {
 
       if (response.ok) {
         setAnalyzed(`${dbName}: Analysis complete. AI tuning recommendation updated.`);
+        // Refresh AI recommendations from database after analysis completes
+        const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+        const freshRecs = await fetch(chatHistoryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operation: 'get_ai_recommendations' })
+        }).then(res => res.ok ? res.json() : []);
+        if (Array.isArray(freshRecs) && freshRecs.length > 0) {
+          setAiRecommendations(freshRecs);
+        }
       } else {
         setAnalyzed(`${dbName}: Real-time analysis completed.`);
       }
@@ -62,20 +101,6 @@ export default function DatabaseMonitoring() {
       setTimeout(() => setAnalyzed(null), 5000);
     }
   };
-
-  // Largest Tables Metrics (Real DB tables)
-  const largestTables = [
-    { name: 'dbo.Orders', rows: '142,520', size: '42.5 MB' },
-    { name: 'dbo.AuditLogs', rows: '389,102', size: '38.2 MB' },
-    { name: 'dbo.Inventory', rows: '89,450', size: '22.1 MB' },
-    { name: 'dbo.Users', rows: '12,410', size: '5.4 MB' },
-  ];
-
-  // AI Recommendations
-  const aiRecommendations = [
-    { title: 'Index optimization', impact: 'HIGH', desc: 'Add a non-clustered index on dbo.Orders(customer_id, status) to optimize order history query response time.' },
-    { title: 'High connections lock warning', impact: 'MEDIUM', desc: 'Detected 2 active connections. Enable read-committed snapshot isolation to avoid potential read locks.' }
-  ];
 
   // Compute KPIs from fetched database metadata
   const totalDbCount = companyDatabases.length;
