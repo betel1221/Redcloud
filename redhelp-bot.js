@@ -2,7 +2,7 @@ import { Telegraf, Markup } from 'telegraf';
 
 // Token copied directly from your BotFather setup
 const BOT_TOKEN = '8798642467:AAHp8zaIVus8TaDUmIvkEvBfBDndyj-jjw0';
-const MINI_APP_URL = 'https://cheaper-acdbentity-betting-passing.trycloudflare.com/Redcloud/'; 
+const MINI_APP_URL = 'https://chose-day-freedom-residents.trycloudflare.com/Redcloud/'; 
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -24,6 +24,16 @@ To start using the bot, run system diagnostics, or chat with the AI assistant, p
     ])
   );
 });
+
+// Automatically update Telegram's bottom menu button with the fresh Cloudflare URL on startup
+bot.telegram.setChatMenuButton({
+  menuButton: {
+    type: 'web_app',
+    text: 'Launch RedHelp',
+    web_app: { url: MINI_APP_URL }
+  }
+}).then(() => console.log('✅ Bottom menu button URL updated in Telegram!'))
+  .catch(err => console.warn('⚠️ Failed to set chat menu button:', err));
 
 bot.launch().then(() => console.log('🤖 RedHelp Bot is live and listening!'));
 

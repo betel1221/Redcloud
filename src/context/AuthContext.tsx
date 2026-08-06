@@ -133,11 +133,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isAuthenticated]);
 
-  // Check URL for telegram_chat_id and register it if authenticated
+  // Check URL or sessionStorage for telegram_chat_id and register it if authenticated
   useEffect(() => {
+    // If not authenticated yet but parameter is in URL, cache it immediately so it survives redirects!
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlChatId = urlParams.get('telegram_chat_id');
+    if (urlChatId) {
+      sessionStorage.setItem('telegram_chat_id', urlChatId);
+    }
+
     if (isAuthenticated && userEmail) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const telegramChatId = urlParams.get('telegram_chat_id');
+      const telegramChatId = urlChatId || sessionStorage.getItem('telegram_chat_id');
       if (telegramChatId) {
         const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
         fetch(chatHistoryUrl, {
@@ -152,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .then(res => {
             if (res.ok) {
               console.log("Registered Telegram Chat ID successfully!");
+              sessionStorage.removeItem('telegram_chat_id');
               const newUrl = window.location.pathname;
               window.history.replaceState({}, document.title, newUrl);
             }
