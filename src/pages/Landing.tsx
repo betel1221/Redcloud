@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Network, Shield, Zap, ChevronRight, Activity } from 'lucide-react';
 
 export default function Landing() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Automatically redirect logged-in users to the dashboard
+    if (localStorage.getItem('auth_isAuthenticated') === 'true') {
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background text-textPrimary overflow-hidden flex flex-col font-sans selection:bg-primary selection:text-white">
