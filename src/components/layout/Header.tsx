@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut, CheckCircle, AlertTriangle, AlertCircle, Moon, Sun, Menu } from 'lucide-react';
+import { Bell, CheckCircle, AlertTriangle, AlertCircle, Moon, Sun, Menu, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -18,10 +18,7 @@ export default function Header({ onMenuToggle, isCollapsed, onDesktopToggle }: H
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchRealNotifications().then(data => setNotifications(data));
@@ -33,28 +30,12 @@ export default function Header({ onMenuToggle, isCollapsed, onDesktopToggle }: H
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
       }
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSearchDropdown(false);
-      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const searchIndex = [
-    { title: 'Dashboard Overview', path: '/dashboard' },
-    { title: 'Server Monitoring', path: '/dashboard/servers' },
-    { title: 'Database Health', path: '/dashboard/databases' },
-    { title: 'Security Audit', path: '/dashboard/security' },
-    { title: 'Alerts & Notifications', path: '/dashboard/alerts' },
-    { title: 'AI Assistant', path: '/dashboard/ai' },
-    { title: 'System Settings', path: '/dashboard/settings' },
-    { title: 'Administrator Profile', path: '/dashboard/profile' },
-  ];
 
-  const filteredSearch = searchIndex.filter(item => 
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
 
 
@@ -81,49 +62,7 @@ export default function Header({ onMenuToggle, isCollapsed, onDesktopToggle }: H
           </button>
         )}
         
-        <div className="relative w-full max-w-[200px] sm:max-w-xs md:max-w-sm lg:w-96" ref={searchRef}>
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-textSecondary" />
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowSearchDropdown(e.target.value.length > 0);
-            }}
-            onFocus={() => {
-              if (searchQuery.length > 0) setShowSearchDropdown(true);
-            }}
-            className="block w-full pl-10 pr-3 py-2 border border-border rounded-lg leading-5 bg-background text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all"
-            placeholder="Search resources, logs, or ask AI..."
-          />
-          
-          {/* Search Dropdown */}
-          {showSearchDropdown && (
-            <div className="absolute top-full left-0 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-              {filteredSearch.length > 0 ? (
-                filteredSearch.map((item, idx) => (
-                  <div 
-                    key={idx}
-                    onClick={() => {
-                      setSearchQuery('');
-                      setShowSearchDropdown(false);
-                      navigate(item.path);
-                    }}
-                    className="px-4 py-2 hover:bg-surfaceHover cursor-pointer text-sm text-textPrimary transition-colors"
-                  >
-                    {item.title}
-                  </div>
-                ))
-              ) : (
-                <div className="px-4 py-3 text-sm text-textSecondary text-center">
-                  No results found for "{searchQuery}"
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+
       </div>
       
       <div className="flex items-center space-x-4">

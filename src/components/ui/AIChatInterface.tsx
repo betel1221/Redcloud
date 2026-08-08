@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, User, Send, Paperclip, FileText, Trash2, Plus, Search, MessageSquare, Menu, X, Pin, Edit2, Download, Loader2, Database, ShieldAlert, Server } from 'lucide-react';
+import { Bot, User, Send, Paperclip, FileText, Trash2, Plus, Search, MessageSquare, Menu, X, Pin, Edit2, Download, Loader2, Database, ShieldAlert, Server, Copy, Check } from 'lucide-react';
 
 interface Message {
   id: number;
@@ -51,20 +51,30 @@ function parseInlineMarkdown(text: string) {
 function FormattedMarkdown({ content }: { content: string }) {
   if (!content) return null;
 
+  // Clean raw n8n function blocks, unclosed function tags, and function outputs
+  const cleanContent = content
+    .replace(/<function[^>]*>[\s\S]*?<\/function>/gi, '')
+    .replace(/<function[^>]*>/gi, '')
+    .replace(/<\/function>/gi, '')
+    .replace(/<function=[\s\S]*?$/gi, '')
+    .trim();
+
+  if (!cleanContent) return null;
+
   const codeBlockRegex = /```([a-zA-Z]*)\n([\s\S]*?)```/g;
   const parts = [];
   let lastIndex = 0;
   let match;
 
-  while ((match = codeBlockRegex.exec(content)) !== null) {
+  while ((match = codeBlockRegex.exec(cleanContent)) !== null) {
     if (match.index > lastIndex) {
-      parts.push({ type: 'text', value: content.slice(lastIndex, match.index) });
+      parts.push({ type: 'text', value: cleanContent.slice(lastIndex, match.index) });
     }
     parts.push({ type: 'code', lang: match[1] || 'sql', value: match[2].trim() });
     lastIndex = match.index + match[0].length;
   }
-  if (lastIndex < content.length) {
-    parts.push({ type: 'text', value: content.slice(lastIndex) });
+  if (lastIndex < cleanContent.length) {
+    parts.push({ type: 'text', value: cleanContent.slice(lastIndex) });
   }
 
   return (
@@ -140,6 +150,22 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
   // States for editing user prompt
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [editingMessageText, setEditingMessageText] = useState('');
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  const handleCopyMessage = (id: number, text: string) => {
+    // Strip n8n function tags when copying
+    const cleanText = text
+      .replace(/<function[^>]*>[\s\S]*?<\/function>/gi, '')
+      .replace(/<function[^>]*>/gi, '')
+      .replace(/<\/function>/gi, '')
+      .replace(/<function=[\s\S]*?$/gi, '')
+      .trim();
+
+    navigator.clipboard.writeText(cleanText).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -245,6 +271,11 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
   const deleteThread = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     e.preventDefault();
+    
+    if (!window.confirm("Are you sure you want to delete this chat session?")) {
+      return;
+    }
+
     setThreads(prev => {
       const remaining = prev.filter(t => t.id !== id);
       if (remaining.length === 0) {
@@ -255,6 +286,21 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
           messages: [],
           updatedAt: new Date().toISOString()
         };
+        
+        // Save initial thread to PostgreSQL
+        const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+        fetch(chatHistoryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operation: 'save_session',
+            session_id: newId,
+            domain: domain,
+            title: 'New Chat',
+            is_pinned: false
+          })
+        }).catch(() => {});
+
         setActiveThreadId(newId);
         return [newThread];
       }
@@ -263,17 +309,48 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
       }
       return remaining;
     });
+
+    // Notify backend to delete session from PostgreSQL
+    const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+    fetch(chatHistoryUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operation: 'delete_session',
+        session_id: id,
+        domain: domain
+      })
+    }).catch(() => {});
   };
 
   const togglePinThread = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     e.preventDefault();
+    let newPinned = false;
+    let title = 'New Chat';
+    
     setThreads(prev => prev.map(t => {
       if (t.id === id) {
-        return { ...t, isPinned: !t.isPinned };
+        newPinned = !t.isPinned;
+        title = t.title;
+        return { ...t, isPinned: newPinned };
       }
       return t;
     }));
+
+    // Save updated session to PostgreSQL
+    const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+    fetch(chatHistoryUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operation: 'save_session',
+        session_id: id,
+        domain: domain,
+        title: title,
+        is_pinned: newPinned
+      })
+    }).catch(() => {});
   };
 
   const startRenameThread = (e: React.MouseEvent, thread: ChatThread) => {
@@ -286,12 +363,31 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
   const saveRenameThread = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (editingThreadId && editingTitle.trim()) {
+      const cleanTitle = editingTitle.trim();
       setThreads(prev => prev.map(t => {
         if (t.id === editingThreadId) {
-          return { ...t, title: editingTitle.trim() };
+          return { ...t, title: cleanTitle };
         }
         return t;
       }));
+
+      // Get target thread pin status to preserve it
+      const targetThread = threads.find(t => t.id === editingThreadId);
+      const isPinned = targetThread ? !!targetThread.isPinned : false;
+
+      // Save updated session to PostgreSQL
+      const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+      fetch(chatHistoryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'save_session',
+          session_id: editingThreadId,
+          domain: domain,
+          title: cleanTitle,
+          is_pinned: isPinned
+        })
+      }).catch(() => {});
     }
     setEditingThreadId(null);
   };
@@ -369,7 +465,7 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
     const sessionIdToSend = !isNaN(numSessionId) && numSessionId > 0 && !currentThreadId.startsWith('session_') ? numSessionId : 0;
 
     const payload = domain === 'database' 
-      ? { message: query, session_id: sessionIdToSend, domain: 'database', database_name: 'FOODAPPANDDB' }
+      ? { message: query, session_id: sessionIdToSend, domain: 'database', database_name: 'YAMROT' }
       : { question: query, server_name: 'ERP-Postgres-Primary', session_id: sessionIdToSend, domain: 'infrastructure', database_name: 'erp_demo' };
 
     try {
@@ -624,12 +720,21 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
                       if (e.key === 'Enter') saveRenameThread();
                       if (e.key === 'Escape') setEditingThreadId(null);
                     }}
-                    autoFocus
+                    ref={el => {
+                      if (el) {
+                        el.focus();
+                        el.select();
+                      }
+                    }}
                     className="w-full bg-background border border-primary rounded px-2 py-1 text-sm text-textPrimary focus:outline-none"
                   />
                 </form>
               ) : (
-                <div className="flex items-center truncate flex-1 pr-2">
+                <div 
+                  className="flex items-center truncate flex-1 pr-2"
+                  onDoubleClick={(e) => startRenameThread(e, thread)}
+                  title="Double-click to rename"
+                >
                   <MessageSquare className={`w-4 h-4 mr-2 flex-shrink-0 ${activeThreadId === thread.id ? 'text-primary' : 'text-textSecondary group-hover:text-textPrimary'}`} />
                   <span className="truncate text-sm">{thread.title}</span>
                 </div>
@@ -819,12 +924,31 @@ export default function AIChatInterface({ domain, title, description }: AIChatIn
                         )}
                         
                         {msg.sender === 'user' && (
+                          <div className="absolute top-2 -left-16 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleCopyMessage(msg.id, msg.text)}
+                              className="p-1 text-textSecondary hover:text-primary transition-colors bg-surface rounded-full shadow-sm border border-border"
+                              title="Copy text"
+                            >
+                              {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                            <button
+                              onClick={() => startEditMessage(msg)}
+                              className="p-1 text-textSecondary hover:text-primary transition-colors bg-surface rounded-full shadow-sm border border-border"
+                              title="Edit prompt"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {msg.sender === 'ai' && (
                           <button
-                            onClick={() => startEditMessage(msg)}
-                            className="absolute top-2 -left-8 p-1 text-textSecondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 bg-surface rounded-full shadow-sm border border-border"
-                            title="Edit prompt"
+                            onClick={() => handleCopyMessage(msg.id, msg.text)}
+                            className="absolute top-2 -right-8 p-1 text-textSecondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 bg-surface rounded-full shadow-sm border border-border"
+                            title="Copy response"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         )}
                       </div>

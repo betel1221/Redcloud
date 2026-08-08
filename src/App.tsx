@@ -10,7 +10,6 @@ import DashboardOverview from './pages/Dashboard/DashboardOverview';
 
 import DatabaseMonitoring from './pages/Dashboard/DatabaseMonitoring';
 import ServerMonitoring from './pages/Dashboard/ServerMonitoring';
-import SecurityMonitoring from './pages/Dashboard/SecurityMonitoring';
 import Alerts from './pages/Dashboard/Alerts';
 import Profile from './pages/Dashboard/Profile';
 import AIAssistant from './pages/Dashboard/AIAssistant';
@@ -62,7 +61,6 @@ function App() {
               <Route index element={<DashboardOverview />} />
               <Route path="database" element={<DatabaseMonitoring />} />
               <Route path="server" element={<ServerMonitoring />} />
-              <Route path="security" element={<SecurityMonitoring />} />
               <Route path="alerts" element={<Alerts />} />
               <Route path="profile" element={<Profile />} />
               <Route path="ai" element={<AIAssistant />} />

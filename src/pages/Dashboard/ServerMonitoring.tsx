@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Server, Cpu, HardDrive, Network, Activity, Loader2, CheckCircle } from 'lucide-react';
+import { Server, Cpu, HardDrive, Network, Activity, Loader2, CheckCircle, Clock } from 'lucide-react';
 import PerformanceChart from '../../components/ui/PerformanceChart';
 import { fetchLiveServerTelemetry, type ServerTelemetry } from '../../api/dashboard';
 
@@ -7,13 +7,73 @@ export default function ServerMonitoring() {
   const [showUpdate, setShowUpdate] = useState<string | null>(null);
   const [servers, setServers] = useState<ServerTelemetry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [serverHistory, setServerHistory] = useState<any[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
 
+  // Clock ticking timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Poll server telemetry from n8n Zabbix webhook every 1 second
   useEffect(() => {
     setLoading(true);
-    fetchLiveServerTelemetry()
-      .then(data => setServers(data))
+    
+    const updateServerData = () => {
+      return fetchLiveServerTelemetry()
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setServers(data);
+            
+            // Compute averages for CPU and Memory
+            const avgCpu = Math.round(data.reduce((s, v) => s + v.cpu.usage_percent, 0) / data.length);
+            const avgMem = Math.round(data.reduce((s, v) => s + v.memory.usage_percent, 0) / data.length);
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            
+            setServerHistory(prev => {
+              const point = { time: timeStr, cpu: avgCpu, memory: avgMem };
+              const updated = [...prev, point];
+              // Keep the last 15 points
+              return updated.slice(-15);
+            });
+          }
+        });
+    };
+
+    // Initial load and seed the history list with 10 dummy trailing points
+    updateServerData()
+      .then(() => {
+        setServerHistory(prev => {
+          if (prev.length === 0) return [];
+          const lastPoint = prev[prev.length - 1];
+          const initial = [];
+          for (let i = 9; i >= 1; i--) {
+            const tempTime = new Date(Date.now() - i * 5000);
+            const tempTimeStr = tempTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            const varianceCpu = Math.floor(Math.random() * 7) - 3; // +/- 3%
+            const varianceMem = Math.floor(Math.random() * 5) - 2; // +/- 2%
+            initial.push({
+              time: tempTimeStr,
+              cpu: Math.max(5, Math.min(95, lastPoint.cpu + varianceCpu)),
+              memory: Math.max(5, Math.min(95, lastPoint.memory + varianceMem))
+            });
+          }
+          initial.push(lastPoint);
+          return initial;
+        });
+      })
+      .catch(err => console.warn("Failed to retrieve initial server telemetry:", err))
       .finally(() => setLoading(false));
-  }, []);               
+
+    const pollingTimer = setInterval(() => {
+      updateServerData().catch(err => console.warn("Failed to poll server telemetry:", err));
+    }, 1000);
+
+    return () => clearInterval(pollingTimer);
+  }, []);
 
   const handleUpdateClick = (updateText: string) => {
     setShowUpdate(updateText);
@@ -44,13 +104,17 @@ export default function ServerMonitoring() {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-textPrimary flex items-center">
             <Server className="w-6 h-6 mr-3 text-primary" />
             Server Infrastructure
           </h1>
           <p className="text-textSecondary mt-1">Monitor compute resources and server health.</p>
+        </div>
+        <div className="glass-card px-4 py-2 flex items-center space-x-2 text-primary font-mono text-sm border border-primary/20 shadow-md">
+          <Clock className="w-4 h-4 animate-pulse" />
+          <span>{currentTime}</span>
         </div>
       </div>
 
@@ -96,7 +160,7 @@ export default function ServerMonitoring() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 space-y-6">
           <div className="h-80">
-            <PerformanceChart title="Server Resource Usage" />
+            <PerformanceChart title="Server Resource Usage" data={serverHistory} />
           </div>
           
           <div className="glass-panel p-6">

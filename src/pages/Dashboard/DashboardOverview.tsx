@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, ChevronRight, Bot, Loader2, ArrowRight, CheckCircle } from 'lucide-react';
+import { Activity, ShieldCheck, Server, Database, AlertTriangle, AlertCircle, ChevronRight, Bot, Loader2, ArrowRight, CheckCircle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PerformanceChart, { mockPerformanceData } from '../../components/ui/PerformanceChart';
@@ -26,6 +26,15 @@ const StatCard = ({ title, value, icon: Icon, colorClass, statusText }: any) => 
 );
 
 export default function DashboardOverview() {
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const { profileComplete, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
@@ -42,16 +51,24 @@ export default function DashboardOverview() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const [healthRes, notifsRes, serversRes] = await Promise.all([
+        const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
+        const [healthRes, notifsRes, serversRes, recsRes] = await Promise.all([
           fetchHealth(),
           fetchRealNotifications(),
-          fetchLiveServerTelemetry()
+          fetchLiveServerTelemetry(),
+          fetch(chatHistoryUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ operation: 'get_ai_recommendations' })
+          }).then(res => res.ok ? res.json() : []).catch(() => [])
         ]);
         
         const criticalCount = notifsRes.filter((n: any) => n.type === 'critical').length;
         const warningCount = notifsRes.filter((n: any) => n.type === 'warning').length;
         const mediumCount = notifsRes.filter((n: any) => n.type === 'info').length;
         const lowCount = notifsRes.filter((n: any) => n.type === 'success' || !n.type).length;
+
+        const activeRec = (Array.isArray(recsRes) && recsRes.length > 0) ? recsRes[0] : null;
 
         setData({
           performance: mockPerformanceData,
@@ -71,8 +88,9 @@ export default function DashboardOverview() {
             low: lowCount
           },
           recommendation: {
-            title: 'No current AI insights.',
-            description: 'The AI DBA has not detected any immediate anomalies in the current telemetry window.',
+            title: activeRec ? activeRec.title : 'No current AI insights.',
+            description: activeRec ? (activeRec.recommendation || activeRec.desc) : 'The AI DBA has not detected any immediate anomalies in the current telemetry window.',
+            impact: activeRec ? activeRec.impact : null
           },
           notifications: notifsRes
         });
@@ -135,14 +153,25 @@ export default function DashboardOverview() {
             </button>
             <div className="flex items-center mb-4">
               <Bot className="w-6 h-6 text-primary mr-3" />
-              <h3 className="text-lg font-bold text-textPrimary">AI Insight Analysis</h3>
+              <h3 className="text-lg font-bold text-textPrimary">
+                {recommendation.title !== 'No current AI insights.' ? recommendation.title : 'AI Insight Analysis'}
+              </h3>
             </div>
             <p className="text-textSecondary text-sm mb-4 leading-relaxed">
-              No historical anomalies detected. Database memory usage and telemetry patterns appear normal.
+              {recommendation.description}
             </p>
+            {recommendation.impact && (
+              <p className="text-textPrimary text-sm font-medium mb-3">
+                Severity Impact: <span className={`font-bold ${recommendation.impact === 'HIGH' ? 'text-danger' : recommendation.impact === 'MEDIUM' ? 'text-warning' : 'text-success'}`}>{recommendation.impact}</span>
+              </p>
+            )}
             <p className="text-textPrimary text-sm font-medium">Recommended action:</p>
             <ul className="list-disc list-inside text-sm text-textSecondary mt-2 space-y-1">
-              <li>Continue monitoring</li>
+              {recommendation.impact ? (
+                <li>Implement index or tuning query advised by AI assistant</li>
+              ) : (
+                <li>Continue monitoring</li>
+              )}
             </ul>
             <button 
               onClick={() => setShowAnalysis(false)}
@@ -154,33 +183,37 @@ export default function DashboardOverview() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-textPrimary">Company Infrastructure Dashboard</h1>
           <p className="text-textSecondary mt-1">Real-time overview of your enterprise systems.</p>
         </div>
-        <div className="flex items-center space-x-2 text-sm">
+        <div className="flex items-center space-x-4 text-sm">
+          <div className="glass-card px-3 py-1.5 flex items-center space-x-1.5 text-primary font-mono text-xs border border-primary/20 shadow-md">
+            <Clock className="w-3.5 h-3.5 animate-pulse" />
+            <span>{currentTime}</span>
+          </div>
           {health.aiSystemRunning ? (
-            <>
-              <span className="relative flex h-3 w-3">
+            <div className="flex items-center space-x-1.5">
+              <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success"></span>
               </span>
               <span className="text-success font-medium">AI System Running</span>
-            </>
+            </div>
           ) : (
-            <>
-              <span className="relative flex h-3 w-3">
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-danger"></span>
+            <div className="flex items-center space-x-1.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-danger"></span>
               </span>
               <span className="text-danger font-medium">AI System Offline</span>
-            </>
+            </div>
           )}
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard 
           title="Database Health" 
           value={`${health.dbHealth}%`} 
@@ -194,13 +227,6 @@ export default function DashboardOverview() {
           icon={Server} 
           colorClass={{ bg: 'bg-success', text: 'text-success', border: 'border-success/30' }}
           statusText={health.serverStatus}
-        />
-        <StatCard 
-          title="Security Score" 
-          value={`${health.securityScore}%`} 
-          icon={ShieldCheck} 
-          colorClass={{ bg: 'bg-warning', text: 'text-warning', border: 'border-warning/30' }}
-          statusText={health.securityStatus}
         />
         <div 
           className="glass-card flex flex-col justify-center items-center text-center group cursor-pointer hover:bg-surfaceHover/80 transition-colors"

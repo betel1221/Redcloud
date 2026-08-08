@@ -4,6 +4,15 @@ import PerformanceChart, { mockPerformanceData } from '../../components/ui/Perfo
 import { fetchLiveServerTelemetry, fetchDatabaseMetadata, type ServerTelemetry, type DatabaseMetadata } from '../../api/dashboard';
 
 export default function DatabaseMonitoring() {
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const [analyzingDb, setAnalyzingDb] = useState<string | null>(null);
   const [analyzed, setAnalyzed] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,34 +34,34 @@ export default function DatabaseMonitoring() {
     setLoading(true);
     const chatHistoryUrl = import.meta.env.VITE_N8N_CHAT_HISTORY_URL || 'http://localhost:5678/webhook/chat-history';
 
-    // Fetch server telemetry, real database metadata, largest tables, AI recommendations, and live history
-    Promise.all([
-      fetchLiveServerTelemetry(),
-      fetchDatabaseMetadata(),
-      fetch(chatHistoryUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'get_largest_tables' })
-      }).then(res => res.ok ? res.json() : []).catch(() => []),
-      fetch(chatHistoryUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'get_ai_recommendations' })
-      }).then(res => res.ok ? res.json() : []).catch(() => []),
-      fetch(chatHistoryUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'get_connection_history' })
-      }).then(res => res.ok ? res.json() : []).catch(() => [])
-    ])
+    // Fetch initial server telemetry, database metadata, largest tables, recommendations, and connection history
+    const loadInitialData = () => {
+      return Promise.all([
+        fetchLiveServerTelemetry(),
+        fetchDatabaseMetadata(),
+        fetch(chatHistoryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operation: 'get_largest_tables' })
+        }).then(res => res.ok ? res.json() : []).catch(() => []),
+        fetch(chatHistoryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operation: 'get_ai_recommendations' })
+        }).then(res => res.ok ? res.json() : []).catch(() => []),
+        fetch(chatHistoryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operation: 'get_connection_history' })
+        }).then(res => res.ok ? res.json() : []).catch(() => [])
+      ])
       .then(([serverData, dbMeta, tablesData, recsData, historyData]) => {
         setServers(serverData);
-        // Filter: only keep MS SQL Server databases
         const mssqlOnly = (dbMeta || []).filter(db => 
           db.type.toLowerCase().includes('mssql') || 
           db.type.toLowerCase().includes('microsoft') ||
           db.type.toLowerCase().includes('sql server') ||
-          db.name === 'FOODAPPANDDB'
+          db.name === 'YAMROT'
         );
         setCompanyDatabases(mssqlOnly);
         
@@ -65,12 +74,46 @@ export default function DatabaseMonitoring() {
         if (Array.isArray(historyData) && historyData.length > 0) {
           setTelemetryHistory(historyData);
         }
-      })
+      });
+    };
+
+    loadInitialData()
       .catch((e) => {
         console.warn("Failed to load DB telemetry:", e);
         setCompanyDatabases([]);
       })
       .finally(() => setLoading(false));
+
+    // Poll real connection telemetry and largest tables every second from n8n
+    const pollingTimer = setInterval(() => {
+      fetch(chatHistoryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'get_connection_history' })
+      })
+      .then(res => res.ok ? res.json() : [])
+      .then(historyData => {
+        if (Array.isArray(historyData) && historyData.length > 0) {
+          setTelemetryHistory(historyData);
+        }
+      })
+      .catch(err => console.warn("Failed to poll live database connection history:", err));
+
+      fetch(chatHistoryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'get_largest_tables' })
+      })
+      .then(res => res.ok ? res.json() : [])
+      .then(tablesData => {
+        if (Array.isArray(tablesData) && tablesData.length > 0) {
+          setLargestTables(tablesData);
+        }
+      })
+      .catch(err => console.warn("Failed to poll live database largest tables:", err));
+    }, 1000);
+
+    return () => clearInterval(pollingTimer);
   }, []);
 
   const handleAnalyze = async (dbName: string) => {
@@ -123,13 +166,17 @@ export default function DatabaseMonitoring() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-textPrimary flex items-center">
             <Database className="w-6 h-6 mr-3 text-primary" />
             Database Monitoring
           </h1>
-          <p className="text-textSecondary mt-1">Real-time telemetry for {companyDatabases.map(d => d.name).join(', ') || 'YAMROT'} (MS SQL) only.</p>
+          <p className="text-textSecondary mt-1">Monitor database performance, telemetry, and index optimization.</p>
+        </div>
+        <div className="glass-card px-4 py-2 flex items-center space-x-2 text-primary font-mono text-sm border border-primary/20 shadow-md">
+          <Clock className="w-4 h-4 animate-pulse" />
+          <span>{currentTime}</span>
         </div>
       </div>
 
@@ -156,8 +203,10 @@ export default function DatabaseMonitoring() {
             <span className="text-[11px] font-medium text-textSecondary">Database Status</span>
             <ShieldCheck className="w-4 h-4 text-success" />
           </div>
-          <p className="text-xl font-bold text-success">{loading ? '—' : 'Online & Sync'}</p>
-          <p className="text-[10px] text-success mt-0.5">100% Availability</p>
+          <p className="text-xl font-bold text-success">{loading ? '—' : (companyDatabases[0]?.status || 'Online')}</p>
+          <p className="text-[10px] text-success mt-0.5">
+            {companyDatabases[0]?.status?.toLowerCase().includes('online') ? '100% Availability' : 'Service degradation'}
+          </p>
         </div>
 
         <div className="glass-card flex flex-col justify-center p-3.5">
@@ -350,7 +399,7 @@ export default function DatabaseMonitoring() {
                         {rec.impact}
                       </span>
                     </div>
-                    <p className="text-xs text-textSecondary leading-relaxed">{rec.desc}</p>
+                    <p className="text-xs text-textSecondary leading-relaxed">{rec.recommendation || rec.desc}</p>
                   </div>
                 ))
               )}

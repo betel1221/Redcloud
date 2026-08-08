@@ -329,14 +329,32 @@ export async function fetchHealth(): Promise<HealthData> {
     if (res.ok) {
       const dbs = await res.json();
       if (Array.isArray(dbs) && dbs.length > 0) {
-        const offlineDbs = dbs.filter(d => d.status?.toLowerCase() !== 'online' && d.status?.toLowerCase() !== 'online & sync');
-        if (offlineDbs.length > 0) {
-          dbHealth = Math.round(((dbs.length - offlineDbs.length) / dbs.length) * 100);
-          dbStatus = `${offlineDbs.length} DBs offline`;
-        } else {
-          dbHealth = 100;
-          dbStatus = `${dbs.length} active database nodes`;
+        const mainDb = dbs.find((d: any) => d.name === 'YAMROT') || dbs[0];
+        let deductions = 0;
+        
+        // 1. Online status check
+        const isOnline = mainDb.status?.toLowerCase() === 'online' || mainDb.status?.toLowerCase() === 'online & sync';
+        if (!isOnline) {
+          deductions += 50;
         }
+
+        // 2. Backup status check
+        const backupOk = mainDb.backup?.toLowerCase().includes('configured') || 
+                         mainDb.backup?.toLowerCase().includes('complete') || 
+                         mainDb.backup?.toLowerCase().includes('ok') || 
+                         mainDb.backup?.toLowerCase().includes('backup');
+        if (!backupOk) {
+          deductions += 15;
+        }
+
+        // 3. Active connections threshold check (warn if > 50 connections)
+        const conns = parseInt(mainDb.connections);
+        if (!isNaN(conns) && conns > 50) {
+          deductions += Math.min(25, Math.floor((conns - 50) / 2));
+        }
+
+        dbHealth = Math.max(10, 100 - deductions);
+        dbStatus = isOnline ? `${dbs.length} active database nodes` : 'Primary database offline';
       }
     }
   } catch (err) {
