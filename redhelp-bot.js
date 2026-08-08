@@ -2,7 +2,7 @@ import { Telegraf, Markup } from 'telegraf';
 
 // Token copied directly from your BotFather setup
 const BOT_TOKEN = '8798642467:AAHp8zaIVus8TaDUmIvkEvBfBDndyj-jjw0';
-const MINI_APP_URL = 'https://chose-day-freedom-residents.trycloudflare.com/Redcloud/'; 
+const MINI_APP_URL = 'https://somerset-deutschland-discussions-showtimes.trycloudflare.com/Redcloud/'; 
 
 const bot = new Telegraf(BOT_TOKEN);
 
