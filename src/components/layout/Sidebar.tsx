@@ -7,13 +7,13 @@ import {
   Bell, 
   Settings,
   User,
-  Activity,
   Bot,
   Shield,
   X
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
+import Logo from '../ui/Logo';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -50,7 +50,7 @@ export default function Sidebar({ isCollapsed, isOpen = false, onClose }: Sideba
     )}>
       <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         <div className="flex items-center">
-          <Activity className="w-6 h-6 text-primary flex-shrink-0" />
+          <Logo size={24} className="flex-shrink-0" />
           {!isCollapsed && <span className="text-lg font-bold text-textPrimary tracking-wider ml-2">Redhelp</span>}
         </div>
         {onClose && (

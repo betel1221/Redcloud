@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Activity, Lock, Mail, Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import Logo from '../components/ui/Logo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -55,7 +56,7 @@ export default function Login() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in">
         <div className="flex justify-center items-center mb-6">
           <Link to="/" className="bg-surface p-3 rounded-2xl border border-border hover:bg-surfaceHover transition-colors cursor-pointer">
-            <Activity className="w-10 h-10 text-primary" />
+            <Logo size={40} />
           </Link>
         </div>
         <div className="mb-8 text-center relative z-10">

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Network, Shield, Zap, ChevronRight, Activity } from 'lucide-react';
+import { Network, Shield, Zap, ChevronRight } from 'lucide-react';
+import Logo from '../components/ui/Logo';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export default function Landing() {
       {/* Navbar */}
       <nav className="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center relative z-20">
         <div className="flex items-center space-x-2">
-          <Activity className="w-8 h-8 text-primary" />
+          <Logo size={32} />
           <span className="text-xl font-bold tracking-widest uppercase text-textPrimary">Redhelp</span>
         </div>
         <div className="flex items-center space-x-4">
